@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green:    #018940;
+      --green-lt: #e6f3ec;
+      --green-dk: #006d33;
+      --blue:     #00a3e0;
+      --red:      #c81212;
+      --t1:       #333333;
+      --t2:       #666666;
+      --t3:       #999999;
+      --b15:      #e2e2e2;
+      --b10:      #ebebeb;
+      --b5:       #f2f2f2;
+      --white:    #ffffff;
+    }
+
+    body {
+      font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 12px;
+      color: var(--t1);
+      background: var(--white);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Step nav ─────────────────────────────────────────────────────── */
+    .step-nav {
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      height: 48px;
+      border-bottom: 1px solid var(--b15);
+      background: var(--white);
+      flex-shrink: 0;
+      gap: 0;
+    }
+    .step-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex: 1;
+      cursor: default;
+      opacity: 0.4;
+      transition: opacity 0.2s;
+    }
+    .step-item.done   { opacity: 0.65; cursor: pointer; }
+    .step-item.active { opacity: 1; }
+    .step-item:hover.done { opacity: 0.9; }
+
+    .step-dot {
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: var(--b10);
+      color: var(--t2);
+      font-size: 11px; font-weight: 600;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      transition: background 0.2s, color 0.2s;
+    }
+    .step-item.active .step-dot { background: var(--green); color: var(--white); }
+    .step-item.done   .step-dot { background: var(--green); color: var(--white); }
+
+    .step-label { font-size: 11px; font-weight: 500; white-space: nowrap; }
+
+    .step-sep {
+      width: 16px; height: 1px;
+      background: var(--b15);
+      flex-shrink: 0;
+    }
+
+    /* ── Step content ─────────────────────────────────────────────────── */
+    .step-content {
+      flex: 1;
+      overflow-y: auto;
+      scrollbar-gutter: stable; /* reserve scrollbar lane so layout never shifts */
+      padding: 16px;
+      display: none;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .step-content.active { display: flex; }
+
+    /* ── Footer ───────────────────────────────────────────────────────── */
+    .step-footer {
+      border-top: 1px solid var(--b15);
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      background: var(--white);
+    }
+    .step-footer .hint { font-size: 11px; color: var(--t3); }
+
+    /* ── Buttons ──────────────────────────────────────────────────────── */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      gap: 6px;
+      padding: 7px 16px;
+      border: none; border-radius: 4px;
+      font-size: 12px; font-weight: 500;
+      cursor: pointer; transition: background 0.15s, opacity 0.15s;
+    }
+    .btn-primary { background: var(--green); color: var(--white); }
+    .btn-primary:hover:not(:disabled) { background: var(--green-dk); }
+    .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn-ghost { background: transparent; color: var(--t2); border: 1px solid var(--b15); }
+    .btn-ghost:hover { background: var(--b5); }
+    .btn-generate {
+      background: var(--green); color: var(--white);
+      width: 100%; padding: 10px;
+      font-size: 13px; font-weight: 600; border-radius: 6px;
+    }
+    .btn-generate:hover:not(:disabled) { background: var(--green-dk); }
+    .btn-generate:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    /* ── Step 1: Upload ───────────────────────────────────────────────── */
+    .upload-zone {
+      border: 2px dashed var(--b15);
+      border-radius: 8px;
+      padding: 28px 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      position: relative; /* needed for the overlay input */
+    }
+    .upload-zone:hover, .upload-zone.drag-over {
+      border-color: var(--green);
+      background: var(--green-lt);
+    }
+    .upload-zone.has-file {
+      border-color: var(--green);
+      background: var(--green-lt);
+    }
+    .upload-icon { color: var(--t3); margin-bottom: 8px; }
+    .upload-zone.has-file .upload-icon { color: var(--green); }
+    .upload-title { font-size: 13px; font-weight: 500; color: var(--t1); margin-bottom: 4px; }
+    .upload-sub   { font-size: 11px; color: var(--t2); }
+    .upload-link  { color: var(--green); text-decoration: underline; cursor: pointer; }
+
+    .data-meta {
+      display: flex; gap: 12px;
+    }
+    .data-badge {
+      background: var(--b5); border-radius: 4px;
+      padding: 5px 10px; font-size: 11px; color: var(--t2);
+    }
+    .data-badge strong { color: var(--t1); font-weight: 600; }
+
+    /* ── Table preview ────────────────────────────────────────────────── */
+    .table-wrap {
+      border: 1px solid var(--b15);
+      border-radius: 6px;
+      overflow: auto;
+      max-height: 220px;
+    }
+    table {
+      width: 100%; border-collapse: collapse;
+      font-size: 11px; white-space: nowrap;
+    }
+    thead th {
+      background: var(--b5);
+      padding: 6px 10px;
+      text-align: left;
+      font-weight: 600; color: var(--t2);
+      border-bottom: 1px solid var(--b15);
+      position: sticky; top: 0;
+    }
+    .col-type {
+      font-size: 9px; font-weight: 400; color: var(--t3);
+      text-transform: uppercase; letter-spacing: .5px;
+      display: block;
+    }
+    tbody td {
+      padding: 5px 10px;
+      border-bottom: 1px solid var(--b10);
+      color: var(--t1);
+      max-width: 120px;
+      overflow: hidden; text-overflow: ellipsis;
+    }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: var(--b5); }
+    .table-more {
+      padding: 6px 10px; font-size: 10px; color: var(--t3);
+      text-align: center; border-top: 1px solid var(--b10);
+      background: var(--b5);
+    }
+
+    /* ── Step 2: Chart type ───────────────────────────────────────────── */
+    .chart-cards {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .chart-card {
+      border: 2px solid var(--b15);
+      border-radius: 8px;
+      padding: 16px 12px 12px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .chart-card:hover { border-color: var(--green); background: var(--green-lt); }
+    .chart-card.selected { border-color: var(--green); background: var(--green-lt); }
+    .chart-card svg { display: block; margin: 0 auto 10px; }
+    .chart-card-title { font-size: 12px; font-weight: 600; color: var(--t1); margin-bottom: 3px; }
+    .chart-card-sub   { font-size: 10px; color: var(--t2); }
+
+    /* ── Step 3: Mapping ──────────────────────────────────────────────── */
+    .field-group { display: flex; flex-direction: column; gap: 6px; }
+    .field-label {
+      font-size: 11px; font-weight: 600; color: var(--t2);
+      text-transform: uppercase; letter-spacing: .5px;
+    }
+    .field-label span { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--t3); }
+
+    select {
+      width: 100%;
+      padding: 7px 10px;
+      border: 1px solid var(--b15);
+      border-radius: 4px;
+      font-size: 12px; color: var(--t1);
+      background: var(--white);
+      outline: none; cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' stroke='%23999' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 8px center;
+      padding-right: 28px;
+    }
+    select:focus { border-color: var(--blue); }
+
+    .series-list { display: flex; flex-direction: column; gap: 4px; }
+    .series-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 8px;
+      border: 1px solid var(--b15);
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+    .series-item:hover { background: var(--b5); }
+    .series-item.checked { border-color: var(--green); background: var(--green-lt); }
+    .series-cb {
+      width: 14px; height: 14px;
+      border: 2px solid var(--b15);
+      border-radius: 3px;
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      transition: border-color 0.1s, background 0.1s;
+    }
+    .series-item.checked .series-cb { border-color: var(--green); background: var(--green); }
+    .series-color { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+    .series-name  { font-size: 12px; color: var(--t1); flex: 1; }
+    .series-type  { font-size: 10px; color: var(--t3); }
+
+    /* ── Step 4: Customize ────────────────────────────────────────────── */
+    .section-title {
+      font-size: 11px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: .5px;
+      color: var(--t2);
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--b10);
+    }
+
+    .option-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 6px 0;
+    }
+    .option-label { font-size: 12px; color: var(--t1); }
+    .option-sub   { font-size: 10px; color: var(--t3); display: block; }
+
+    /* Toggle */
+    .toggle {
+      width: 32px; height: 18px;
+      background: var(--b15); border-radius: 9px;
+      position: relative; cursor: pointer;
+      transition: background 0.2s; flex-shrink: 0;
+    }
+    .toggle::after {
+      content: '';
+      width: 14px; height: 14px;
+      background: var(--white);
+      border-radius: 50%;
+      position: absolute; top: 2px; left: 2px;
+      transition: left 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,.2);
+    }
+    .toggle.on { background: var(--green); }
+    .toggle.on::after { left: 16px; }
+
+    /* Segmented control */
+    .seg-group { display: flex; border: 1px solid var(--b15); border-radius: 4px; overflow: hidden; }
+    .seg-btn {
+      flex: 1; padding: 5px 8px;
+      font-size: 11px; font-weight: 500;
+      background: var(--white); color: var(--t2);
+      border: none; cursor: pointer; text-align: center;
+      border-right: 1px solid var(--b15);
+      transition: background 0.1s, color 0.1s;
+    }
+    .seg-btn:last-child { border-right: none; }
+    .seg-btn.active { background: var(--green); color: var(--white); }
+    .seg-btn:hover:not(.active) { background: var(--b5); }
+
+    /* Range slider */
+    .range-row { display: flex; align-items: center; gap: 8px; width: 160px; }
+    input[type="range"] {
+      flex: 1; min-width: 0; /* allow shrinking below browser intrinsic min */
+      accent-color: var(--green);
+      height: 4px; cursor: pointer;
+    }
+    .range-val {
+      min-width: 20px; text-align: right;
+      font-size: 11px; color: var(--t2); font-variant-numeric: tabular-nums;
+      flex-shrink: 0;
+    }
+
+    /* Per-series color picker */
+    .series-color-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 5px 0;
+    }
+    .series-color-row + .series-color-row {
+      border-top: 1px solid var(--b10);
+    }
+    .series-color-name {
+      font-size: 12px; color: var(--t1);
+      flex: 0 0 100px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .series-swatches { display: flex; gap: 5px; flex-wrap: wrap; }
+    .swatch {
+      width: 20px; height: 20px; border-radius: 4px;
+      border: 2px solid transparent; cursor: pointer;
+      transition: transform 0.1s, border-color 0.1s;
+    }
+    .swatch.active { border-color: var(--t1); transform: scale(1.2); }
+    .swatch:hover:not(.active) { transform: scale(1.1); }
+
+    /* Inline text input */
+    .text-input {
+      padding: 5px 8px;
+      border: 1px solid var(--b15);
+      border-radius: 4px;
+      font-size: 12px; color: var(--t1);
+      background: var(--white);
+      outline: none;
+      flex-shrink: 0;
+    }
+    .text-input:focus { border-color: var(--blue); }
+    .text-input::placeholder { color: var(--t3); }
+
+    /* Status */
+    .status { font-size: 11px; min-height: 16px; }
+    .status.success { color: var(--green); }
+    .status.error   { color: var(--red);   }
+
+    /* Error inline */
+    .inline-err { font-size: 11px; color: var(--red); display: none; margin-top: 4px; }
+    .inline-err.show { display: block; }
+
+    .hidden { display: none !important; }
+
+    /* Paste fallback */
+    .paste-toggle {
+      text-align: center; font-size: 11px; color: var(--t3);
+      cursor: pointer; padding: 4px 0; user-select: none;
+    }
+    .paste-toggle:hover { color: var(--t2); }
+    .paste-area textarea {
+      width: 100%; height: 90px;
+      font-family: 'Menlo', 'Courier New', monospace; font-size: 11px;
+      color: var(--t1); background: var(--b5);
+      border: 1px solid var(--b15); border-radius: 4px;
+      padding: 8px; resize: vertical; outline: none;
+    }
+    .paste-area textarea:focus { border-color: var(--blue); }
+
+    /* Divider */
+    hr { border: none; border-top: 1px solid var(--b10); }
+  </style>
+</head>
+<body>
+
+  <!-- ── Step navigation ──────────────────────────────────────────────── -->
+  <nav class="step-nav">
+    <div class="step-item active" id="nav-1" data-step="1">
+      <div class="step-dot">1</div>
+      <span class="step-label">Data</span>
+    </div>
+    <div class="step-sep"></div>
+    <div class="step-item" id="nav-2" data-step="2">
+      <div class="step-dot">2</div>
+      <span class="step-label">Chart</span>
+    </div>
+    <div class="step-sep"></div>
+    <div class="step-item" id="nav-3" data-step="3">
+      <div class="step-dot">3</div>
+      <span class="step-label">Mapping</span>
+    </div>
+    <div class="step-sep"></div>
+    <div class="step-item" id="nav-4" data-step="4">
+      <div class="step-dot">4</div>
+      <span class="step-label">Customize</span>
+    </div>
+  </nav>
+
+  <!-- ── Step 1: Upload data ──────────────────────────────────────────── -->
+  <div class="step-content active" id="step-1">
+
+    <div class="upload-zone" id="upload-zone">
+      <div class="upload-icon">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+          <rect x="4" y="4" width="24" height="24" rx="4" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M16 20V12M12 16l4-4 4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M10 24h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <p class="upload-title" id="upload-title">Upload CSV file</p>
+      <p class="upload-sub" id="upload-sub">
+        Drop file here or <span class="upload-link">browse</span>
+      </p>
+      <!-- Covers the whole zone — direct click, no programmatic .click() needed -->
+      <input type="file" id="file-input" accept=".csv,.tsv,.txt"
+        style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:0" />
+    </div>
+
+    <p class="inline-err" id="upload-err"></p>
+
+    <!-- Paste fallback -->
+    <div class="paste-toggle" id="paste-toggle">
+      <span>— or paste CSV data directly —</span>
+    </div>
+    <div class="paste-area hidden" id="paste-area">
+      <textarea id="csv-paste" placeholder="Paste CSV here…&#10;month,sales&#10;Jan,120&#10;Feb,95"></textarea>
+      <button class="btn btn-ghost" id="parse-paste-btn" style="width:100%;margin-top:6px">Parse pasted data</button>
+    </div>
+
+    <!-- Data summary badges (hidden until file loaded) -->
+    <div class="data-meta hidden" id="data-meta">
+      <div class="data-badge"><strong id="row-count">0</strong> rows</div>
+      <div class="data-badge"><strong id="col-count">0</strong> columns</div>
+    </div>
+
+    <!-- Table preview (hidden until file loaded) -->
+    <div class="hidden" id="table-container">
+      <div class="table-wrap">
+        <table id="preview-table">
+          <thead id="preview-thead"></thead>
+          <tbody id="preview-tbody"></tbody>
+        </table>
+        <div class="table-more hidden" id="table-more"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Step 2: Choose chart type ────────────────────────────────────── -->
+  <div class="step-content" id="step-2">
+
+    <div class="chart-cards">
+
+      <!-- Bar chart card -->
+      <div class="chart-card" id="card-bar" data-type="bar">
+        <svg width="80" height="60" viewBox="0 0 80 60">
+          <rect x="8"  y="30" width="14" height="22" rx="1" fill="#00a3e0" opacity=".9"/>
+          <rect x="26" y="16" width="14" height="36" rx="1" fill="#00a3e0"/>
+          <rect x="44" y="10" width="14" height="42" rx="1" fill="#00a3e0"/>
+          <rect x="62" y="22" width="14" height="30" rx="1" fill="#00a3e0" opacity=".9"/>
+          <line x1="4" y1="52" x2="78" y2="52" stroke="#e2e2e2" stroke-width="1"/>
+          <line x1="4" y1="4"  x2="4"  y2="52" stroke="#e2e2e2" stroke-width="1"/>
+        </svg>
+        <p class="chart-card-title">Bar Chart</p>
+        <p class="chart-card-sub">Compare categories</p>
+      </div>
+
+      <!-- Line chart card -->
+      <div class="chart-card" id="card-line" data-type="line">
+        <svg width="80" height="60" viewBox="0 0 80 60">
+          <polyline points="8,44 26,28 44,14 62,24 76,10"
+            fill="none" stroke="#00a3e0" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+          <circle cx="8"  cy="44" r="3" fill="#fff" stroke="#00a3e0" stroke-width="2"/>
+          <circle cx="26" cy="28" r="3" fill="#fff" stroke="#00a3e0" stroke-width="2"/>
+          <circle cx="44" cy="14" r="3" fill="#fff" stroke="#00a3e0" stroke-width="2"/>
+          <circle cx="62" cy="24" r="3" fill="#fff" stroke="#00a3e0" stroke-width="2"/>
+          <circle cx="76" cy="10" r="3" fill="#fff" stroke="#00a3e0" stroke-width="2"/>
+          <line x1="4" y1="52" x2="78" y2="52" stroke="#e2e2e2" stroke-width="1"/>
+          <line x1="4" y1="4"  x2="4"  y2="52" stroke="#e2e2e2" stroke-width="1"/>
+        </svg>
+        <p class="chart-card-title">Line Chart</p>
+        <p class="chart-card-sub">Show trends over time</p>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- ── Step 3: Map fields ────────────────────────────────────────────── -->
+  <div class="step-content" id="step-3">
+
+    <div class="field-group">
+      <label class="field-label" for="x-field">X Axis <span>(categories / labels)</span></label>
+      <select id="x-field"></select>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">Y Axis <span>(select one or more numeric columns)</span></label>
+      <div class="series-list" id="series-list"></div>
+      <p class="inline-err" id="series-err">Select at least one Y column.</p>
+    </div>
+
+  </div>
+
+  <!-- ── Step 4: Customize & generate ─────────────────────────────────── -->
+  <div class="step-content" id="step-4">
+
+    <!-- Y-axis label (shared option) -->
+    <div>
+      <p class="section-title">Y Axis</p>
+      <div class="option-row">
+        <div>
+          <span class="option-label">Axis label</span>
+          <span class="option-sub">Optional text shown alongside the axis</span>
+        </div>
+        <input type="text" id="y-axis-label" class="text-input"
+          placeholder="e.g. Total Logins" style="width:140px" />
+      </div>
+    </div>
+
+    <!-- Colors -->
+    <div>
+      <p class="section-title">Colors</p>
+      <div id="series-colors-list"></div>
+    </div>
+
+    <!-- Bar-specific options -->
+    <div id="bar-options">
+      <p class="section-title">Bar Chart Options</p>
+
+      <div class="option-row">
+        <span class="option-label">Layout</span>
+        <div class="seg-group" id="bar-layout">
+          <button class="seg-btn active" data-val="vertical">Vertical</button>
+          <button class="seg-btn"        data-val="horizontal">Horizontal</button>
+        </div>
+      </div>
+
+      <div class="option-row">
+        <div>
+          <span class="option-label">Bar labels</span>
+          <span class="option-sub">Show values on bars</span>
+        </div>
+        <div class="toggle" id="toggle-bar-labels"></div>
+      </div>
+
+      <div class="option-row">
+        <span class="option-label">Border radius</span>
+        <div class="range-row">
+          <span class="range-val" id="bar-radius-val">0</span>
+          <input type="range" id="bar-radius" min="0" max="12" value="0" step="1" />
+        </div>
+      </div>
+
+      <div class="option-row">
+        <div>
+          <span class="option-label">Horizontal grid</span>
+        </div>
+        <div class="toggle on" id="toggle-bar-grid-h"></div>
+      </div>
+
+      <div class="option-row">
+        <div>
+          <span class="option-label">Vertical grid</span>
+        </div>
+        <div class="toggle" id="toggle-bar-grid-v"></div>
+      </div>
+    </div>
+
+    <!-- Line-specific options -->
+    <div id="line-options" class="hidden">
+      <p class="section-title">Line Chart Options</p>
+
+      <div class="option-row">
+        <span class="option-label">Curve type</span>
+        <div class="seg-group" id="line-curve">
+          <button class="seg-btn active" data-val="linear">Linear</button>
+          <button class="seg-btn"        data-val="smooth">Smooth</button>
+          <button class="seg-btn"        data-val="step">Step</button>
+        </div>
+      </div>
+
+      <div class="option-row">
+        <div>
+          <span class="option-label">Fill area</span>
+          <span class="option-sub">Shade under the line</span>
+        </div>
+        <div class="toggle" id="toggle-line-area"></div>
+      </div>
+
+      <div class="option-row">
+        <div>
+          <span class="option-label">Show markers</span>
+          <span class="option-sub">Data point dots</span>
+        </div>
+        <div class="toggle on" id="toggle-line-markers"></div>
+      </div>
+
+      <div class="option-row">
+        <div>
+          <span class="option-label">Horizontal grid</span>
+        </div>
+        <div class="toggle on" id="toggle-line-grid-h"></div>
+      </div>
+    </div>
+
+    <hr />
+
+    <!-- Generate -->
+    <button class="btn btn-generate" id="generate-btn">Generate Chart in Figma</button>
+    <p class="status" id="status-msg"></p>
+
+  </div>
+
+  <!-- ── Footer ────────────────────────────────────────────────────────── -->
+  <div class="step-footer">
+    <button class="btn btn-ghost" id="back-btn" style="visibility:hidden">← Back</button>
+    <span class="hint" id="footer-hint"></span>
+    <button class="btn btn-primary" id="next-btn" disabled>Next →</button>
+  </div>
+
+</body>
+</html>
