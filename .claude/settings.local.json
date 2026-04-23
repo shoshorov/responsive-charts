@@ -6,7 +6,10 @@
       "Bash(xxd \"/Users/lyudmil.shoshorov/Desktop/Report - R21 - Retailer Engagement by Offer Category 03-04-2026 \\(#ForUSLOT - Lotus Group International Limited \\(Group Lotus Plc\\) \\(ID_ 48295\\)\\).csv\")",
       "Bash(node -e ' *)",
       "Bash(node -e \"console.log\\(require\\('./node_modules/html-inline-script-webpack-plugin/package.json'\\).version\\)\")",
-      "Bash(node)"
+      "Bash(node)",
+      "Bash(git init *)",
+      "Bash(git remote *)",
+      "Bash(git config *)"
     ]
   }
 }
