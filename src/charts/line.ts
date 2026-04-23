@@ -68,6 +68,7 @@ export async function createLineChart(payload: GenerateChartPayload): Promise<Fr
   plotArea.clipsContent = false; // allow y-axis labels to center over top/bottom grid lines
   plotArea.itemSpacing = 0;
   plotArea.fills = [];
+  plotArea.layoutAlign = 'STRETCH';
   plotArea.resize(
     CHART.WIDTH - CHART.MARGIN.left - CHART.MARGIN.right,
     canvasH + CHART.X_AXIS_HEIGHT,
@@ -105,8 +106,8 @@ export async function createLineChart(payload: GenerateChartPayload): Promise<Fr
     lbl.textAlignVertical = 'CENTER';
     const lblH = TEXT.TICK_SIZE + 4;
     lbl.resize(canvasH, lblH);
-    lbl.x = yLabelFrameW / 2 - canvasH / 2;
-    lbl.y = canvasH / 2 - lblH / 2;
+    lbl.x = (yLabelFrameW - lblH) / 2;
+    lbl.y = canvasH;
     lbl.rotation = 90;
     yLabelFrame.appendChild(lbl);
     yGroup.appendChild(yLabelFrame);

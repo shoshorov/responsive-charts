@@ -30,7 +30,7 @@ export const CHART_PALETTE: string[] = [
 export const CHART = {
   WIDTH:        600,
   HEIGHT:       300,
-  MARGIN:       { top: 20, right: 20, bottom: 20, left: 45 },
+  MARGIN:       { top: 24, right: 24, bottom: 24, left: 24 },
   Y_AXIS_WIDTH: 45,
   X_AXIS_HEIGHT:25,
   BAR_GAP:      8,
