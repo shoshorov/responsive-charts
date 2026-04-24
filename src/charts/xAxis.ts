@@ -103,9 +103,7 @@ export function formatDateLabel(
       return `${date.getDate()} ${MONTH_NAMES[m]}`;
 
     case 'month':
-      // Annotate January (or the first visible label) with the year
-      if (m === 0 || prevDate === undefined) return `${MONTH_NAMES[m]} '${yy}`;
-      return MONTH_NAMES[m];
+      return `${MONTH_NAMES[m]} '${yy}`;
 
     case 'quarter': {
       const q = Math.floor(m / 3) + 1;

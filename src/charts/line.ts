@@ -245,10 +245,10 @@ export async function createLineChart(payload: GenerateChartPayload): Promise<Fr
     t.fontName = { family: TEXT.FONT_FAMILY, style: 'Regular' };
     t.fontSize = TEXT.TICK_SIZE;
     t.fills = [solidFill(TOKENS.black75)];
+    t.textAutoResize = 'WIDTH_AND_HEIGHT';
     t.characters = lbl.text;
     t.textAlignHorizontal = 'CENTER';
-    t.resize(40, CHART.X_AXIS_HEIGHT - 6);
-    t.x = Math.round(pt.x - 20);
+    t.x = Math.round(pt.x - t.width / 2);
     t.y = canvasH + 6; // below the tick
     t.constraints = { horizontal: 'SCALE', vertical: 'MIN' };
     canvas.appendChild(t);
