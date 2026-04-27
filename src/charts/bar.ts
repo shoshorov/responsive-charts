@@ -355,40 +355,6 @@ function buildHorizontalBarChart(
   root.fills = [solidFill(TOKENS.white)];
   root.resize(CHART.WIDTH, Math.max(200, totalH));
 
-  // Header row: blank label spacer + axis tick labels
-  const headerRow = figma.createFrame();
-  headerRow.name = 'X Axis Ticks';
-  headerRow.layoutMode = 'HORIZONTAL';
-  headerRow.primaryAxisSizingMode = 'FIXED';
-  headerRow.counterAxisSizingMode = 'FIXED';
-  headerRow.fills = [];
-  headerRow.resize(CHART.WIDTH - CHART.MARGIN.left - CHART.MARGIN.right, CHART.X_AXIS_HEIGHT);
-  root.appendChild(headerRow);
-
-  const labelSpacer = figma.createFrame();
-  labelSpacer.name = 'Label spacer';
-  labelSpacer.layoutMode = 'NONE';
-  labelSpacer.fills = [];
-  labelSpacer.resize(LABEL_W, CHART.X_AXIS_HEIGHT);
-  headerRow.appendChild(labelSpacer);
-
-  const tickArea = figma.createFrame();
-  tickArea.name = 'Tick area';
-  tickArea.layoutMode = 'HORIZONTAL';
-  tickArea.primaryAxisSizingMode = 'FIXED';
-  tickArea.counterAxisSizingMode = 'FIXED';
-  tickArea.primaryAxisAlignItems = 'SPACE_BETWEEN';
-  tickArea.fills = [];
-  tickArea.resize(bodyW, CHART.X_AXIS_HEIGHT);
-  headerRow.appendChild(tickArea);
-
-  for (let i = 0; i <= 4; i++) {
-    const v = (maxVal / 4) * i;
-    const t = makeText(formatTick(v), TEXT.TICK_SIZE, TOKENS.black75, i === 4 ? 'RIGHT' : 'CENTER');
-    t.layoutGrow = 0;
-    tickArea.appendChild(t);
-  }
-
   // Data rows
   data.forEach(row => {
     const groupFrame = figma.createFrame();
@@ -449,6 +415,40 @@ function buildHorizontalBarChart(
       }
     });
   });
+
+  // Footer row: blank label spacer + axis tick labels
+  const headerRow = figma.createFrame();
+  headerRow.name = 'X Axis Ticks';
+  headerRow.layoutMode = 'HORIZONTAL';
+  headerRow.primaryAxisSizingMode = 'FIXED';
+  headerRow.counterAxisSizingMode = 'FIXED';
+  headerRow.fills = [];
+  headerRow.resize(CHART.WIDTH - CHART.MARGIN.left - CHART.MARGIN.right, CHART.X_AXIS_HEIGHT);
+  root.appendChild(headerRow);
+
+  const labelSpacer = figma.createFrame();
+  labelSpacer.name = 'Label spacer';
+  labelSpacer.layoutMode = 'NONE';
+  labelSpacer.fills = [];
+  labelSpacer.resize(LABEL_W, CHART.X_AXIS_HEIGHT);
+  headerRow.appendChild(labelSpacer);
+
+  const tickArea = figma.createFrame();
+  tickArea.name = 'Tick area';
+  tickArea.layoutMode = 'HORIZONTAL';
+  tickArea.primaryAxisSizingMode = 'FIXED';
+  tickArea.counterAxisSizingMode = 'FIXED';
+  tickArea.primaryAxisAlignItems = 'SPACE_BETWEEN';
+  tickArea.fills = [];
+  tickArea.resize(bodyW, CHART.X_AXIS_HEIGHT);
+  headerRow.appendChild(tickArea);
+
+  for (let i = 0; i <= 4; i++) {
+    const v = (maxVal / 4) * i;
+    const t = makeText(formatTick(v), TEXT.TICK_SIZE, TOKENS.black75, i === 4 ? 'RIGHT' : 'CENTER');
+    t.layoutGrow = 0;
+    tickArea.appendChild(t);
+  }
 
   return root;
 }
