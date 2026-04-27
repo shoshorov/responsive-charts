@@ -139,10 +139,13 @@ function buildVerticalBarChart(
   body.resize(bodyW, CHART.HEIGHT + CHART.X_AXIS_HEIGHT);
   plotArea.appendChild(body);
 
-  // Grid + bars layer (absolute positioning)
+  // Grid + bars layer
   const canvas = figma.createFrame();
   canvas.name = 'Grid and Bars';
-  canvas.layoutMode = 'NONE';
+  canvas.layoutMode = 'HORIZONTAL';
+  canvas.primaryAxisSizingMode = 'FIXED';
+  canvas.counterAxisSizingMode = 'FIXED';
+  canvas.itemSpacing = 0;
   canvas.fills = [];
   canvas.clipsContent = false; // allows tick marks to render below canvas boundary
   canvas.resize(bodyW, CHART.HEIGHT);
@@ -161,6 +164,7 @@ function buildVerticalBarChart(
       line.strokeWeight = 1;
       if (!isBaseline) line.dashPattern = [4, 4];
       line.constraints  = { horizontal: 'SCALE', vertical: 'SCALE' };
+      line.layoutPositioning = 'ABSOLUTE';
       canvas.appendChild(line);
     }
   } else {
@@ -172,6 +176,7 @@ function buildVerticalBarChart(
     baseline.strokes      = [solidFill(TOKENS.black50)];
     baseline.strokeWeight = 1;
     baseline.constraints  = { horizontal: 'SCALE', vertical: 'MIN' };
+    baseline.layoutPositioning = 'ABSOLUTE';
     canvas.appendChild(baseline);
   }
 
@@ -185,6 +190,7 @@ function buildVerticalBarChart(
       rect.x = x; rect.y = 0;
       rect.fills = [solidFill(TOKENS.black15)];
       rect.constraints = { horizontal: 'SCALE', vertical: 'SCALE' };
+      rect.layoutPositioning = 'ABSOLUTE';
       canvas.appendChild(rect);
     });
   }
@@ -197,13 +203,15 @@ function buildVerticalBarChart(
   barsArea.counterAxisSizingMode = 'FIXED';
   barsArea.primaryAxisAlignItems = 'SPACE_BETWEEN';
   barsArea.counterAxisAlignItems = 'MAX';
-  barsArea.paddingLeft   = CHART.BAR_GAP;
-  barsArea.paddingRight  = CHART.BAR_GAP;
-  barsArea.itemSpacing   = CHART.BAR_GAP;
+  barsArea.paddingLeft   = 0;
+  barsArea.paddingRight  = 0;
+  barsArea.itemSpacing   = 0;
   barsArea.fills = [];
   barsArea.resize(bodyW, CHART.HEIGHT);
   barsArea.x = 0; barsArea.y = 0;
   barsArea.constraints = { horizontal: 'SCALE', vertical: 'SCALE' };
+  barsArea.layoutSizingHorizontal = 'FILL';
+  barsArea.layoutSizingVertical = 'FILL';
   canvas.appendChild(barsArea);
 
   data.forEach(row => {
@@ -214,10 +222,12 @@ function buildVerticalBarChart(
     colFrame.counterAxisSizingMode = 'FIXED';
     colFrame.counterAxisAlignItems = 'MAX';
     colFrame.primaryAxisAlignItems = 'CENTER';
+    colFrame.paddingLeft  = CHART.BAR_GAP / 2;
+    colFrame.paddingRight = CHART.BAR_GAP / 2;
     colFrame.itemSpacing = 2;
     colFrame.fills = [];
     colFrame.layoutGrow = 1;
-    colFrame.resize(Math.floor(bodyW / data.length) - CHART.BAR_GAP, CHART.HEIGHT);
+    colFrame.resize(Math.floor(bodyW / data.length), CHART.HEIGHT);
     barsArea.appendChild(colFrame);
 
     yFields.forEach((field, si) => {
@@ -230,13 +240,13 @@ function buildVerticalBarChart(
       barWrap.layoutMode = 'VERTICAL';
       barWrap.primaryAxisSizingMode = 'FIXED';
       barWrap.counterAxisSizingMode = 'FIXED';
-      barWrap.primaryAxisAlignItems = 'MIN';
+      barWrap.primaryAxisAlignItems = 'MAX';
       barWrap.counterAxisAlignItems = 'CENTER';
       barWrap.fills = [];
       barWrap.layoutGrow = 1;
       barWrap.itemSpacing = 2;
       barWrap.resize(
-        Math.floor((colFrame.width - (yFields.length - 1) * 2) / yFields.length),
+        Math.floor((colFrame.width - CHART.BAR_GAP - (yFields.length - 1) * 2) / yFields.length),
         CHART.HEIGHT,
       );
       colFrame.appendChild(barWrap);
@@ -274,6 +284,7 @@ function buildVerticalBarChart(
     tick.y = CHART.HEIGHT; // sits right on the baseline
     tick.fills = [solidFill(TOKENS.black50)];
     tick.constraints = { horizontal: 'SCALE', vertical: 'MIN' };
+    tick.layoutPositioning = 'ABSOLUTE';
     canvas.appendChild(tick);
   });
 
