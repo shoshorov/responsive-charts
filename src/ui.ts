@@ -33,7 +33,7 @@ const state: AppState = {
   currentStep: 1,
   completedSteps: new Set(),
   barOptions: {
-    layout: 'vertical', showBarLabels: false,
+    layout: 'vertical', stacked: false, showBarLabels: false,
     borderRadius: 0, showGridH: true, showGridV: false,
     yAxisLabel: '',
   },
@@ -482,8 +482,9 @@ function init(): void {
   });
 
   // Bar options
-  initSegGroup('bar-layout',      v => { state.barOptions.layout = v as 'vertical' | 'horizontal'; });
-  initToggle('toggle-bar-labels', false, v => { state.barOptions.showBarLabels = v; });
+  initSegGroup('bar-layout',       v => { state.barOptions.layout = v as 'vertical' | 'horizontal'; });
+  initToggle('toggle-bar-stacked', false, v => { state.barOptions.stacked = v; });
+  initToggle('toggle-bar-labels',  false, v => { state.barOptions.showBarLabels = v; });
   initToggle('toggle-bar-grid-h', true,  v => { state.barOptions.showGridH = v; });
   initToggle('toggle-bar-grid-v', false, v => { state.barOptions.showGridV = v; });
   initRangeInput('bar-radius', 'bar-radius-val', v => { state.barOptions.borderRadius = v; });

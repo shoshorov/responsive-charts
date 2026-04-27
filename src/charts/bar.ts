@@ -24,7 +24,10 @@ function buildVerticalBarChart(
   palette: string[],
   opts: BarChartOptions
 ): FrameNode {
-  const allValues = yFields.flatMap(f => data.map(r => Number(r[f]) || 0));
+  const isStacked = opts.stacked && yFields.length > 1;
+  const allValues = isStacked
+    ? data.map(r => yFields.reduce((s, f) => s + (Number(r[f]) || 0), 0))
+    : yFields.flatMap(f => data.map(r => Number(r[f]) || 0));
   const maxVal = Math.max(...allValues, 1);
   const yLabelFrameW = opts.yAxisLabel ? CHART.Y_LABEL_FRAME_W : 0;
   const yGroupGap    = opts.yAxisLabel ? 16 : 0;
@@ -57,12 +60,12 @@ function buildVerticalBarChart(
   plotArea.clipsContent = false; // allow y-axis labels to center over top/bottom grid lines
   plotArea.itemSpacing = 0;
   plotArea.fills = [];
-  plotArea.layoutAlign = 'STRETCH';
   plotArea.resize(
     CHART.WIDTH - CHART.MARGIN.left - CHART.MARGIN.right,
     CHART.HEIGHT + CHART.X_AXIS_HEIGHT,
   );
   root.appendChild(plotArea);
+  plotArea.layoutAlign = 'STRETCH';
 
   // ── Y-axis group (label + tick labels, horizontal, 16px gap) ────────────────
   const yGroup = figma.createFrame();
@@ -135,9 +138,9 @@ function buildVerticalBarChart(
   body.counterAxisSizingMode = 'FIXED';
   body.itemSpacing = 0;
   body.fills = [];
-  body.layoutGrow = 1;
   body.resize(bodyW, CHART.HEIGHT + CHART.X_AXIS_HEIGHT);
   plotArea.appendChild(body);
+  body.layoutGrow = 1;
 
   // Grid + bars layer
   const canvas = figma.createFrame();
@@ -159,25 +162,25 @@ function buildVerticalBarChart(
       const line = figma.createLine();
       line.name = isBaseline ? 'Baseline' : `Grid H ${i}`;
       line.resize(bodyW, 0);
-      line.x = 0; line.y = y;
       line.strokes      = [solidFill(isBaseline ? TOKENS.black50 : TOKENS.black25)];
       line.strokeWeight = 1;
       if (!isBaseline) line.dashPattern = [4, 4];
       line.constraints  = { horizontal: 'SCALE', vertical: 'SCALE' };
-      line.layoutPositioning = 'ABSOLUTE';
       canvas.appendChild(line);
+      line.layoutPositioning = 'ABSOLUTE';
+      line.x = 0; line.y = y;
     }
   } else {
     // Always draw at least the baseline
     const baseline = figma.createLine();
     baseline.name = 'Baseline';
     baseline.resize(bodyW, 0);
-    baseline.x = 0; baseline.y = CHART.HEIGHT - 1;
     baseline.strokes      = [solidFill(TOKENS.black50)];
     baseline.strokeWeight = 1;
     baseline.constraints  = { horizontal: 'SCALE', vertical: 'MIN' };
-    baseline.layoutPositioning = 'ABSOLUTE';
     canvas.appendChild(baseline);
+    baseline.layoutPositioning = 'ABSOLUTE';
+    baseline.x = 0; baseline.y = CHART.HEIGHT - 1;
   }
 
   // Vertical grid lines (solid rectangles — unchanged style)
@@ -187,11 +190,11 @@ function buildVerticalBarChart(
       const rect = figma.createRectangle();
       rect.name = `Grid V ${i}`;
       rect.resize(1, CHART.HEIGHT);
-      rect.x = x; rect.y = 0;
       rect.fills = [solidFill(TOKENS.black15)];
       rect.constraints = { horizontal: 'SCALE', vertical: 'SCALE' };
-      rect.layoutPositioning = 'ABSOLUTE';
       canvas.appendChild(rect);
+      rect.layoutPositioning = 'ABSOLUTE';
+      rect.x = x; rect.y = 0;
     });
   }
 
@@ -208,63 +211,105 @@ function buildVerticalBarChart(
   barsArea.itemSpacing   = 0;
   barsArea.fills = [];
   barsArea.resize(bodyW, CHART.HEIGHT);
-  barsArea.x = 0; barsArea.y = 0;
-  barsArea.constraints = { horizontal: 'SCALE', vertical: 'SCALE' };
+  canvas.appendChild(barsArea);
   barsArea.layoutSizingHorizontal = 'FILL';
   barsArea.layoutSizingVertical = 'FILL';
-  canvas.appendChild(barsArea);
 
   data.forEach(row => {
     const colFrame = figma.createFrame();
     colFrame.name = `Col: ${row[xField]}`;
-    colFrame.layoutMode = 'HORIZONTAL';
     colFrame.primaryAxisSizingMode = 'FIXED';
     colFrame.counterAxisSizingMode = 'FIXED';
-    colFrame.counterAxisAlignItems = 'MAX';
-    colFrame.primaryAxisAlignItems = 'CENTER';
     colFrame.paddingLeft  = CHART.BAR_GAP / 2;
     colFrame.paddingRight = CHART.BAR_GAP / 2;
-    colFrame.itemSpacing = 2;
+    colFrame.itemSpacing  = isStacked ? 0 : 2;
     colFrame.fills = [];
-    colFrame.layoutGrow = 1;
     colFrame.resize(Math.floor(bodyW / data.length), CHART.HEIGHT);
     barsArea.appendChild(colFrame);
+    colFrame.layoutGrow = 1;
 
-    yFields.forEach((field, si) => {
-      const value = Number(row[field]) || 0;
-      const color = palette[si % palette.length];
-      const barH  = Math.max(2, (value / maxVal) * CHART.HEIGHT);
+    if (isStacked) {
+      colFrame.layoutMode = 'VERTICAL';
+      colFrame.primaryAxisAlignItems = 'MAX'; // push stack to bottom
+      colFrame.counterAxisAlignItems = 'CENTER';
 
-      const barWrap = figma.createFrame();
-      barWrap.name = `Bar: ${field}`;
-      barWrap.layoutMode = 'VERTICAL';
-      barWrap.primaryAxisSizingMode = 'FIXED';
-      barWrap.counterAxisSizingMode = 'FIXED';
-      barWrap.primaryAxisAlignItems = 'MAX';
-      barWrap.counterAxisAlignItems = 'CENTER';
-      barWrap.fills = [];
-      barWrap.layoutGrow = 1;
-      barWrap.itemSpacing = 2;
-      barWrap.resize(
-        Math.floor((colFrame.width - CHART.BAR_GAP - (yFields.length - 1) * 2) / yFields.length),
-        CHART.HEIGHT,
-      );
-      colFrame.appendChild(barWrap);
+      const barW = Math.max(4, Math.floor(bodyW / data.length) - CHART.BAR_GAP);
+      // Top-most non-zero field gets rounded top corners
+      const topField = [...yFields].reverse().find(f => (Number(row[f]) || 0) > 0);
+
+      // Append reversed so series[0] ends up at the visual bottom
+      [...yFields].reverse().forEach((field, ri) => {
+        const si = yFields.length - 1 - ri;
+        const value = Number(row[field]) || 0;
+        if (value === 0) return;
+        const barH = Math.max(1, Math.round((value / maxVal) * CHART.HEIGHT));
+        const rect = figma.createRectangle();
+        rect.name = `Bar: ${field}`;
+        rect.resize(barW, barH);
+        rect.fills = [solidFill(palette[si % palette.length])];
+        if (field === topField && opts.borderRadius > 0) {
+          (rect as RectangleNode).topLeftRadius  = opts.borderRadius;
+          (rect as RectangleNode).topRightRadius = opts.borderRadius;
+          (rect as RectangleNode).bottomLeftRadius  = 0;
+          (rect as RectangleNode).bottomRightRadius = 0;
+        }
+        colFrame.appendChild(rect);
+      });
 
       if (opts.showBarLabels) {
-        const labelText = makeText(formatTick(value), 9, TOKENS.black75, 'CENTER');
-        barWrap.appendChild(labelText);
+        const total = yFields.reduce((s, f) => s + (Number(row[f]) || 0), 0);
+        const stackH = yFields.reduce((s, f) => {
+          const v = Number(row[f]) || 0;
+          return s + (v > 0 ? Math.max(1, Math.round((v / maxVal) * CHART.HEIGHT)) : 0);
+        }, 0);
+        const lbl = makeText(formatTick(total), 9, TOKENS.black75, 'CENTER');
+        colFrame.appendChild(lbl);
+        lbl.layoutPositioning = 'ABSOLUTE';
+        lbl.resize(colFrame.width - CHART.BAR_GAP, 12);
+        lbl.x = 0;
+        lbl.y = CHART.HEIGHT - stackH - 14;
       }
+    } else {
+      colFrame.layoutMode = 'HORIZONTAL';
+      colFrame.counterAxisAlignItems = 'MAX';
+      colFrame.primaryAxisAlignItems = 'CENTER';
 
-      const rect = figma.createRectangle();
-      rect.name = 'Bar';
-      rect.resize(Math.max(4, barWrap.width - 2), Math.round(barH));
-      rect.fills = [solidFill(color)];
-      rect.cornerRadius = opts.borderRadius;
-      rect.constraints  = { horizontal: 'SCALE', vertical: 'SCALE' };
-      rect.layoutGrow   = 0;
-      barWrap.appendChild(rect);
-    });
+      yFields.forEach((field, si) => {
+        const value = Number(row[field]) || 0;
+        const color = palette[si % palette.length];
+        const barH  = Math.max(2, (value / maxVal) * CHART.HEIGHT);
+
+        const barWrap = figma.createFrame();
+        barWrap.name = `Bar: ${field}`;
+        barWrap.layoutMode = 'VERTICAL';
+        barWrap.primaryAxisSizingMode = 'FIXED';
+        barWrap.counterAxisSizingMode = 'FIXED';
+        barWrap.primaryAxisAlignItems = 'MAX';
+        barWrap.counterAxisAlignItems = 'CENTER';
+        barWrap.fills = [];
+        barWrap.itemSpacing = 2;
+        barWrap.resize(
+          Math.floor((colFrame.width - CHART.BAR_GAP - (yFields.length - 1) * 2) / yFields.length),
+          CHART.HEIGHT,
+        );
+        colFrame.appendChild(barWrap);
+        barWrap.layoutGrow = 1;
+
+        if (opts.showBarLabels) {
+          const labelText = makeText(formatTick(value), 9, TOKENS.black75, 'CENTER');
+          barWrap.appendChild(labelText);
+        }
+
+        const rect = figma.createRectangle();
+        rect.name = 'Bar';
+        rect.resize(Math.max(4, barWrap.width - 2), Math.round(barH));
+        rect.fills = [solidFill(color)];
+        rect.cornerRadius = opts.borderRadius;
+        rect.constraints  = { horizontal: 'SCALE', vertical: 'SCALE' };
+        rect.layoutGrow   = 0;
+        barWrap.appendChild(rect);
+      });
+    }
   });
 
   // ── Legend ────────────────────────────────────────────────────────────────
@@ -280,12 +325,12 @@ function buildVerticalBarChart(
     const tick = figma.createRectangle();
     tick.name = `Tick ${i}`;
     tick.resize(1, 4);
-    tick.x = tickX;
-    tick.y = CHART.HEIGHT; // sits right on the baseline
     tick.fills = [solidFill(TOKENS.black50)];
     tick.constraints = { horizontal: 'SCALE', vertical: 'MIN' };
-    tick.layoutPositioning = 'ABSOLUTE';
     canvas.appendChild(tick);
+    tick.layoutPositioning = 'ABSOLUTE';
+    tick.x = tickX;
+    tick.y = CHART.HEIGHT;
   });
 
   // ── X axis labels — direct text children in horizontal frame ──────────────
@@ -332,7 +377,10 @@ function buildHorizontalBarChart(
   palette: string[],
   opts: BarChartOptions
 ): FrameNode {
-  const allValues = yFields.flatMap(f => data.map(r => Number(r[f]) || 0));
+  const isStacked = opts.stacked && yFields.length > 1;
+  const allValues = isStacked
+    ? data.map(r => yFields.reduce((s, f) => s + (Number(r[f]) || 0), 0))
+    : yFields.flatMap(f => data.map(r => Number(r[f]) || 0));
   const maxVal = Math.max(...allValues, 1);
   const BAR_H         = 18;
   const GROUP_GAP     = 8;
@@ -340,7 +388,9 @@ function buildHorizontalBarChart(
   const LABEL_W       = 100;
   const VALUE_W       = 36;
   const bodyW  = CHART.WIDTH - CHART.MARGIN.left - CHART.MARGIN.right - LABEL_W - VALUE_W;
-  const groupH = yFields.length * BAR_H + (yFields.length - 1) * BAR_GAP_INNER;
+  const groupH = isStacked
+    ? BAR_H
+    : yFields.length * BAR_H + (yFields.length - 1) * BAR_GAP_INNER;
   const totalBarsH = data.length * groupH + (data.length - 1) * GROUP_GAP;
   const totalH = totalBarsH + CHART.MARGIN.top + CHART.MARGIN.bottom + CHART.X_AXIS_HEIGHT;
 
@@ -374,46 +424,91 @@ function buildHorizontalBarChart(
     catLabel.textTruncation = 'ENDING';
     groupFrame.appendChild(catLabel);
 
-    const barsCol = figma.createFrame();
-    barsCol.name = 'Bars';
-    barsCol.layoutMode = 'VERTICAL';
-    barsCol.primaryAxisSizingMode = 'FIXED';
-    barsCol.counterAxisSizingMode = 'FIXED';
-    barsCol.primaryAxisAlignItems = 'CENTER';
-    barsCol.itemSpacing = BAR_GAP_INNER;
-    barsCol.fills = [];
-    barsCol.resize(bodyW, groupH);
-    groupFrame.appendChild(barsCol);
+    if (isStacked) {
+      const stackRow = figma.createFrame();
+      stackRow.name = 'Bars';
+      stackRow.layoutMode = 'HORIZONTAL';
+      stackRow.primaryAxisSizingMode = 'FIXED';
+      stackRow.counterAxisSizingMode = 'FIXED';
+      stackRow.counterAxisAlignItems = 'CENTER';
+      stackRow.primaryAxisAlignItems = 'MIN';
+      stackRow.itemSpacing = 0;
+      stackRow.fills = [];
+      stackRow.resize(bodyW, BAR_H);
+      groupFrame.appendChild(stackRow);
 
-    yFields.forEach((field, si) => {
-      const value = Number(row[field]) || 0;
-      const color = palette[si % palette.length];
-      const barW  = Math.max(2, (value / maxVal) * bodyW);
+      // Rightmost non-zero field gets rounded right corners
+      const rightField = [...yFields].reverse().find(f => (Number(row[f]) || 0) > 0);
 
-      const barRow = figma.createFrame();
-      barRow.name = `Bar: ${field}`;
-      barRow.layoutMode = 'HORIZONTAL';
-      barRow.primaryAxisSizingMode = 'FIXED';
-      barRow.counterAxisSizingMode = 'FIXED';
-      barRow.counterAxisAlignItems = 'CENTER';
-      barRow.fills = [];
-      barRow.resize(bodyW, BAR_H);
-      barsCol.appendChild(barRow);
+      yFields.forEach((field, si) => {
+        const value = Number(row[field]) || 0;
+        if (value === 0) return;
+        const segW = Math.max(2, Math.round((value / maxVal) * bodyW));
+        const rect = figma.createRectangle();
+        rect.name = `Bar: ${field}`;
+        rect.resize(segW, BAR_H - 4);
+        rect.fills = [solidFill(palette[si % palette.length])];
+        if (field === rightField && opts.borderRadius > 0) {
+          (rect as RectangleNode).topRightRadius    = opts.borderRadius;
+          (rect as RectangleNode).bottomRightRadius = opts.borderRadius;
+          (rect as RectangleNode).topLeftRadius     = 0;
+          (rect as RectangleNode).bottomLeftRadius  = 0;
+        }
+        stackRow.appendChild(rect);
+      });
 
-      const rect = figma.createRectangle();
-      rect.name = 'Bar';
-      rect.resize(Math.round(barW), BAR_H - 4);
-      rect.fills = [solidFill(color)];
-      rect.cornerRadius = opts.borderRadius;
-      rect.constraints  = { horizontal: 'SCALE', vertical: 'SCALE' };
-      barRow.appendChild(rect);
-
-      if (opts.showBarLabels && value > 0) {
-        const t = makeText(formatTick(value), 9, TOKENS.black75, 'LEFT');
-        t.x = Math.round(barW) + 4;
-        barRow.appendChild(t);
+      if (opts.showBarLabels) {
+        const total = yFields.reduce((s, f) => s + (Number(row[f]) || 0), 0);
+        const totalW = yFields.reduce((s, f) => {
+          const v = Number(row[f]) || 0;
+          return s + (v > 0 ? Math.max(2, Math.round((v / maxVal) * bodyW)) : 0);
+        }, 0);
+        const t = makeText(formatTick(total), 9, TOKENS.black75, 'LEFT');
+        t.x = totalW + 4;
+        stackRow.appendChild(t);
       }
-    });
+    } else {
+      const barsCol = figma.createFrame();
+      barsCol.name = 'Bars';
+      barsCol.layoutMode = 'VERTICAL';
+      barsCol.primaryAxisSizingMode = 'FIXED';
+      barsCol.counterAxisSizingMode = 'FIXED';
+      barsCol.primaryAxisAlignItems = 'CENTER';
+      barsCol.itemSpacing = BAR_GAP_INNER;
+      barsCol.fills = [];
+      barsCol.resize(bodyW, groupH);
+      groupFrame.appendChild(barsCol);
+
+      yFields.forEach((field, si) => {
+        const value = Number(row[field]) || 0;
+        const color = palette[si % palette.length];
+        const barW  = Math.max(2, (value / maxVal) * bodyW);
+
+        const barRow = figma.createFrame();
+        barRow.name = `Bar: ${field}`;
+        barRow.layoutMode = 'HORIZONTAL';
+        barRow.primaryAxisSizingMode = 'FIXED';
+        barRow.counterAxisSizingMode = 'FIXED';
+        barRow.counterAxisAlignItems = 'CENTER';
+        barRow.fills = [];
+        barRow.resize(bodyW, BAR_H);
+        barsCol.appendChild(barRow);
+
+        const rect = figma.createRectangle();
+        rect.name = 'Bar';
+        rect.resize(Math.round(barW), BAR_H - 4);
+        rect.fills = [solidFill(color)];
+        rect.cornerRadius = opts.borderRadius;
+        rect.constraints  = { horizontal: 'SCALE', vertical: 'SCALE' };
+        barRow.appendChild(rect);
+
+        if (opts.showBarLabels && value > 0) {
+          const t = makeText(formatTick(value), 9, TOKENS.black75, 'LEFT');
+          t.x = Math.round(barW) + 4;
+          barRow.appendChild(t);
+        }
+      });
+    }
   });
 
   // Footer row: blank label spacer + axis tick labels

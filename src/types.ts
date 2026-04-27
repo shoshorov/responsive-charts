@@ -6,6 +6,7 @@ export interface DataRow {
 
 export interface BarChartOptions {
   layout: 'vertical' | 'horizontal';
+  stacked: boolean;
   showBarLabels: boolean;
   borderRadius: number;
   showGridH: boolean;
