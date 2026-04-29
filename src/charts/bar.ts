@@ -1,5 +1,5 @@
 import { GenerateChartPayload, BarChartOptions } from '../types';
-import { TOKENS, CHART, CHART_PALETTE, TEXT, solidFill } from '../styles/tokens';
+import { TOKENS, CHART, CHART_PALETTE, TEXT, solidFill, formatTick } from '../styles/tokens';
 import { buildXAxisConfig } from './xAxis';
 import { buildLegend } from './legend';
 
@@ -153,6 +153,7 @@ function buildVerticalBarChart(
   canvas.clipsContent = false; // allows tick marks to render below canvas boundary
   canvas.resize(bodyW, CHART.HEIGHT);
   body.appendChild(canvas);
+  canvas.layoutSizingHorizontal = 'FILL';
 
   // ── Horizontal grid lines — dashed Black-25, baseline solid Black-50 ──────
   if (opts.showGridH) {
@@ -254,6 +255,7 @@ function buildVerticalBarChart(
           (rect as RectangleNode).bottomRightRadius = 0;
         }
         colFrame.appendChild(rect);
+        rect.layoutSizingHorizontal = 'FILL';
       });
 
       if (opts.showBarLabels) {
@@ -268,6 +270,7 @@ function buildVerticalBarChart(
         lbl.resize(colFrame.width - CHART.BAR_GAP, 12);
         lbl.x = 0;
         lbl.y = CHART.HEIGHT - stackH - 14;
+        lbl.constraints = { horizontal: 'STRETCH', vertical: 'MIN' };
       }
     } else {
       colFrame.layoutMode = 'HORIZONTAL';
@@ -308,6 +311,7 @@ function buildVerticalBarChart(
         rect.constraints  = { horizontal: 'SCALE', vertical: 'SCALE' };
         rect.layoutGrow   = 0;
         barWrap.appendChild(rect);
+        rect.layoutSizingHorizontal = 'FILL';
       });
     }
   });
@@ -315,6 +319,7 @@ function buildVerticalBarChart(
   // ── Legend ────────────────────────────────────────────────────────────────
   const legend = buildLegend(yFields, palette, innerW, 'bar');
   root.appendChild(legend);
+  legend.layoutSizingHorizontal = 'FILL';
 
   // ── Tick marks on baseline (absolutely positioned inside canvas) ──────────
   // canvas.clipsContent = false so they render 4px below the canvas boundary,
@@ -347,6 +352,7 @@ function buildVerticalBarChart(
   xAxis.fills = [];
   xAxis.resize(bodyW, CHART.X_AXIS_HEIGHT);
   body.appendChild(xAxis);
+  xAxis.layoutSizingHorizontal = 'FILL';
 
   xAxisCfg.labels.forEach(lbl => {
     if (lbl.visible) {
@@ -416,6 +422,7 @@ function buildHorizontalBarChart(
     groupFrame.fills = [];
     groupFrame.resize(CHART.WIDTH - CHART.MARGIN.left - CHART.MARGIN.right, groupH + GROUP_GAP);
     root.appendChild(groupFrame);
+    groupFrame.layoutSizingHorizontal = 'FILL';
 
     const catLabel = makeText(
       String(row[xField] ?? ''), TEXT.TICK_SIZE, TOKENS.black75, 'RIGHT'
@@ -427,19 +434,16 @@ function buildHorizontalBarChart(
     if (isStacked) {
       const stackRow = figma.createFrame();
       stackRow.name = 'Bars';
-      stackRow.layoutMode = 'HORIZONTAL';
-      stackRow.primaryAxisSizingMode = 'FIXED';
-      stackRow.counterAxisSizingMode = 'FIXED';
-      stackRow.counterAxisAlignItems = 'CENTER';
-      stackRow.primaryAxisAlignItems = 'MIN';
-      stackRow.itemSpacing = 0;
+      stackRow.layoutMode = 'NONE';
       stackRow.fills = [];
       stackRow.resize(bodyW, BAR_H);
       groupFrame.appendChild(stackRow);
+      stackRow.layoutGrow = 1;
 
       // Rightmost non-zero field gets rounded right corners
       const rightField = [...yFields].reverse().find(f => (Number(row[f]) || 0) > 0);
 
+      let cumX = 0;
       yFields.forEach((field, si) => {
         const value = Number(row[field]) || 0;
         if (value === 0) return;
@@ -455,17 +459,19 @@ function buildHorizontalBarChart(
           (rect as RectangleNode).bottomLeftRadius  = 0;
         }
         stackRow.appendChild(rect);
+        rect.constraints = { horizontal: 'SCALE', vertical: 'CENTER' };
+        rect.x = cumX;
+        rect.y = 2;
+        cumX += segW;
       });
 
       if (opts.showBarLabels) {
         const total = yFields.reduce((s, f) => s + (Number(row[f]) || 0), 0);
-        const totalW = yFields.reduce((s, f) => {
-          const v = Number(row[f]) || 0;
-          return s + (v > 0 ? Math.max(2, Math.round((v / maxVal) * bodyW)) : 0);
-        }, 0);
         const t = makeText(formatTick(total), 9, TOKENS.black75, 'LEFT');
-        t.x = totalW + 4;
         stackRow.appendChild(t);
+        t.constraints = { horizontal: 'SCALE', vertical: 'CENTER' };
+        t.x = cumX + 4;
+        t.y = Math.round((BAR_H - TEXT.TICK_SIZE) / 2);
       }
     } else {
       const barsCol = figma.createFrame();
@@ -478,6 +484,7 @@ function buildHorizontalBarChart(
       barsCol.fills = [];
       barsCol.resize(bodyW, groupH);
       groupFrame.appendChild(barsCol);
+      barsCol.layoutGrow = 1;
 
       yFields.forEach((field, si) => {
         const value = Number(row[field]) || 0;
@@ -486,26 +493,28 @@ function buildHorizontalBarChart(
 
         const barRow = figma.createFrame();
         barRow.name = `Bar: ${field}`;
-        barRow.layoutMode = 'HORIZONTAL';
-        barRow.primaryAxisSizingMode = 'FIXED';
-        barRow.counterAxisSizingMode = 'FIXED';
-        barRow.counterAxisAlignItems = 'CENTER';
+        barRow.layoutMode = 'NONE';
         barRow.fills = [];
         barRow.resize(bodyW, BAR_H);
         barsCol.appendChild(barRow);
+        barRow.layoutSizingHorizontal = 'FILL';
 
         const rect = figma.createRectangle();
         rect.name = 'Bar';
         rect.resize(Math.round(barW), BAR_H - 4);
         rect.fills = [solidFill(color)];
         rect.cornerRadius = opts.borderRadius;
-        rect.constraints  = { horizontal: 'SCALE', vertical: 'SCALE' };
         barRow.appendChild(rect);
+        rect.constraints = { horizontal: 'SCALE', vertical: 'CENTER' };
+        rect.x = 0;
+        rect.y = 2;
 
         if (opts.showBarLabels && value > 0) {
           const t = makeText(formatTick(value), 9, TOKENS.black75, 'LEFT');
-          t.x = Math.round(barW) + 4;
           barRow.appendChild(t);
+          t.constraints = { horizontal: 'SCALE', vertical: 'CENTER' };
+          t.x = Math.round(barW) + 4;
+          t.y = Math.round((BAR_H - TEXT.TICK_SIZE) / 2);
         }
       });
     }
@@ -520,6 +529,7 @@ function buildHorizontalBarChart(
   headerRow.fills = [];
   headerRow.resize(CHART.WIDTH - CHART.MARGIN.left - CHART.MARGIN.right, CHART.X_AXIS_HEIGHT);
   root.appendChild(headerRow);
+  headerRow.layoutSizingHorizontal = 'FILL';
 
   const labelSpacer = figma.createFrame();
   labelSpacer.name = 'Label spacer';
@@ -537,6 +547,7 @@ function buildHorizontalBarChart(
   tickArea.fills = [];
   tickArea.resize(bodyW, CHART.X_AXIS_HEIGHT);
   headerRow.appendChild(tickArea);
+  tickArea.layoutGrow = 1;
 
   for (let i = 0; i <= 4; i++) {
     const v = (maxVal / 4) * i;
@@ -565,8 +576,3 @@ function makeText(
   return t;
 }
 
-function formatTick(value: number): string {
-  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
-  if (value >= 1_000)     return `${(value / 1_000).toFixed(1)}K`;
-  return value % 1 === 0  ? String(Math.round(value)) : value.toFixed(1);
-}

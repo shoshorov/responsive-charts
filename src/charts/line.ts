@@ -1,5 +1,5 @@
 import { GenerateChartPayload, LineChartOptions } from '../types';
-import { TOKENS, CHART, CHART_PALETTE, TEXT, solidFill, hexToRGB } from '../styles/tokens';
+import { TOKENS, CHART, CHART_PALETTE, TEXT, solidFill, hexToRGB, formatTick } from '../styles/tokens';
 import { buildXAxisConfig } from './xAxis';
 import { buildLegend } from './legend';
 
@@ -68,12 +68,12 @@ export async function createLineChart(payload: GenerateChartPayload): Promise<Fr
   plotArea.clipsContent = false; // allow y-axis labels to center over top/bottom grid lines
   plotArea.itemSpacing = 0;
   plotArea.fills = [];
-  plotArea.layoutAlign = 'STRETCH';
   plotArea.resize(
     CHART.WIDTH - CHART.MARGIN.left - CHART.MARGIN.right,
     canvasH + CHART.X_AXIS_HEIGHT,
   );
   root.appendChild(plotArea);
+  plotArea.layoutAlign = 'STRETCH';
 
   // ── Y Axis Group (label + ticks, horizontal auto layout) ─────────────────
   const yGroup = figma.createFrame();
@@ -145,9 +145,9 @@ export async function createLineChart(payload: GenerateChartPayload): Promise<Fr
   canvas.layoutMode = 'NONE';
   canvas.fills = [solidFill(TOKENS.white)];
   canvas.clipsContent = false;
-  canvas.layoutGrow = 1;
   canvas.resize(canvasW, canvasH + CHART.X_AXIS_HEIGHT);
   plotArea.appendChild(canvas);
+  canvas.layoutGrow = 1;
 
   // ── Horizontal grid lines — dashed Black-25, baseline solid Black-50 ─────
   if (opts.showGridH) {
@@ -258,6 +258,7 @@ export async function createLineChart(payload: GenerateChartPayload): Promise<Fr
   const innerW = CHART.WIDTH - CHART.MARGIN.left - CHART.MARGIN.right;
   const legend = buildLegend(yFields, palette, innerW, 'line');
   root.appendChild(legend);
+  legend.layoutSizingHorizontal = 'FILL';
 
   return root;
 }
@@ -304,8 +305,3 @@ function buildAreaPath(pts: Point[], canvasH: number): string {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function formatTick(value: number): string {
-  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
-  if (value >= 1_000)     return `${(value / 1_000).toFixed(1)}K`;
-  return value % 1 === 0  ? String(Math.round(value)) : value.toFixed(1);
-}

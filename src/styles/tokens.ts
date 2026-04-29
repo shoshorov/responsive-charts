@@ -59,3 +59,9 @@ export function hexToRGB(hex: string): { r: number; g: number; b: number } {
 export function solidFill(hex: string): SolidPaint {
   return { type: 'SOLID', color: hexToRGB(hex) };
 }
+
+export function formatTick(value: number): string {
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
+  if (value >= 1_000)     return `${(value / 1_000).toFixed(1)}K`;
+  return value % 1 === 0  ? String(Math.round(value)) : value.toFixed(1);
+}
