@@ -327,10 +327,12 @@ function buildVerticalBarChart(
   xAxisCfg.labels.forEach((lbl, i) => {
     if (!lbl.visible) return;
     const tickX = Math.round((i + 0.5) * bodyW / data.length);
-    const tick = figma.createRectangle();
+    const tick = figma.createVector();
     tick.name = `Tick ${i}`;
-    tick.resize(1, 4);
-    tick.fills = [solidFill(TOKENS.black50)];
+    tick.vectorPaths = [{ windingRule: 'NONZERO', data: 'M 0 0 L 0 4' }];
+    tick.strokes = [solidFill(TOKENS.black50)];
+    tick.strokeWeight = 1;
+    tick.fills = [];
     tick.constraints = { horizontal: 'SCALE', vertical: 'MIN' };
     canvas.appendChild(tick);
     tick.layoutPositioning = 'ABSOLUTE';

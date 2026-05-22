@@ -207,15 +207,32 @@ export async function createLineChart(payload: GenerateChartPayload): Promise<Fr
     if (opts.showMarkers) {
       const r = CHART.MARK_RADIUS;
       pts.forEach((pt, i) => {
-        const dot = figma.createEllipse();
-        dot.name = `Mark ${field} ${i}`;
-        dot.resize(r * 2, r * 2);
-        dot.x = pt.x - r; dot.y = pt.y - r;
-        dot.fills   = [solidFill(TOKENS.white)];
-        dot.strokes = [solidFill(color)];
-        dot.strokeWeight = CHART.LINE_STROKE;
-        dot.constraints  = { horizontal: 'SCALE', vertical: 'SCALE' };
-        canvas.appendChild(dot);
+        // Two near-zero-area vectors with round stroke caps render as fixed-size circles.
+        // SCALE on a zero-width bounding box only moves the x position proportionally
+        // without stretching the visual stroke — prevents circles becoming ellipses on resize.
+        const dotOuter = figma.createVector();
+        dotOuter.name = `Mark ${field} ${i} outer`;
+        dotOuter.vectorPaths = [{ windingRule: 'NONZERO', data: 'M 0 0 L 0 0.01' }];
+        dotOuter.strokes     = [solidFill(color)];
+        dotOuter.strokeWeight = r * 2;
+        dotOuter.strokeCap   = 'ROUND';
+        dotOuter.fills       = [];
+        dotOuter.x           = pt.x;
+        dotOuter.y           = pt.y;
+        dotOuter.constraints = { horizontal: 'SCALE', vertical: 'SCALE' };
+        canvas.appendChild(dotOuter);
+
+        const dotInner = figma.createVector();
+        dotInner.name = `Mark ${field} ${i}`;
+        dotInner.vectorPaths = [{ windingRule: 'NONZERO', data: 'M 0 0 L 0 0.01' }];
+        dotInner.strokes     = [solidFill(TOKENS.white)];
+        dotInner.strokeWeight = r * 2 - CHART.LINE_STROKE * 2;
+        dotInner.strokeCap   = 'ROUND';
+        dotInner.fills       = [];
+        dotInner.x           = pt.x;
+        dotInner.y           = pt.y;
+        dotInner.constraints = { horizontal: 'SCALE', vertical: 'SCALE' };
+        canvas.appendChild(dotInner);
       });
     }
   });
@@ -229,13 +246,15 @@ export async function createLineChart(payload: GenerateChartPayload): Promise<Fr
 
     const pt = pts0[i];
 
-    // Tick mark (1 × 4 px rectangle, Black-50) — sits on the baseline
-    const tick = figma.createRectangle();
+    // Tick mark — vertical vector so strokeWeight stays 1px when chart is resized
+    const tick = figma.createVector();
     tick.name = `Tick ${i}`;
-    tick.resize(1, 4);
+    tick.vectorPaths = [{ windingRule: 'NONZERO', data: 'M 0 0 L 0 4' }];
+    tick.strokes = [solidFill(TOKENS.black50)];
+    tick.strokeWeight = 1;
+    tick.fills = [];
     tick.x = pt.x;
     tick.y = canvasH;
-    tick.fills = [solidFill(TOKENS.black50)];
     tick.constraints = { horizontal: 'SCALE', vertical: 'MIN' };
     canvas.appendChild(tick);
 
