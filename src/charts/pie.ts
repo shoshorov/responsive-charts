@@ -73,45 +73,31 @@ function buildPieWithBottomLegend(
   outerCircle.strokeWeight = 1;
   pieContainer.appendChild(outerCircle);
 
-  // Draw radial lines (spokes) for each slice
+  // Draw pie slices using arc ellipses
   let startAngle = 0;
   slices.forEach((slice, idx) => {
     if (slice.value === 0) return;
     const proportion = slice.value / totalValue;
-    const angle = proportion * 360;
-    const midAngle = startAngle + angle / 2;
+    const sweepAngle = proportion * 360;
+    const endAngle = startAngle + sweepAngle;
 
-    // Draw line from center outward
-    const lineLen = radius;
-    const lineW = Math.max(3, Math.ceil(angle / 25));
+    const arc = figma.createEllipse();
+    arc.name = `Slice: ${slice.label}`;
+    arc.resize(diameter, diameter);
+    arc.fills = [solidFill(palette[idx % palette.length])];
+    arc.strokes = [solidFill(TOKENS.white)];
+    arc.strokeWeight = 2;
 
-    const line = figma.createRectangle();
-    line.name = `Line: ${slice.label}`;
-    line.resize(lineW, lineLen);
-    line.fills = [solidFill(palette[idx % palette.length])];
-    line.strokes = [solidFill(TOKENS.white)];
-    line.strokeWeight = 0.5;
+    // Set arc properties
+    arc.arcData = {
+      startingAngle: (startAngle * Math.PI) / 180,
+      endingAngle: (endAngle * Math.PI) / 180,
+      innerRadius: 0.45,
+    };
 
-    // Position with center at pie center, extend upward then rotate
-    line.x = centerX - lineW / 2;
-    line.y = centerY - lineLen;
-    line.rotation = midAngle;
-
-    pieContainer.appendChild(line);
-
-    startAngle += angle;
+    pieContainer.appendChild(arc);
+    startAngle = endAngle;
   });
-
-  // Inner circle (cover center)
-  const innerCircle = figma.createEllipse();
-  innerCircle.name = 'Inner Circle';
-  innerCircle.resize(radius * 0.35, radius * 0.35);
-  innerCircle.fills = [solidFill(TOKENS.white)];
-  innerCircle.strokes = [solidFill(TOKENS.black15)];
-  innerCircle.strokeWeight = 1;
-  innerCircle.x = centerX - (radius * 0.35) / 2;
-  innerCircle.y = centerY - (radius * 0.35) / 2;
-  pieContainer.appendChild(innerCircle);
 
   // Legend below
   const legend = buildPieLegend(slices, palette, innerW);
@@ -177,45 +163,31 @@ function buildPieWithLeftLegend(
   outerCircle.strokeWeight = 1;
   pieContainer.appendChild(outerCircle);
 
-  // Draw radial lines (spokes) for each slice
+  // Draw pie slices using arc ellipses
   let startAngle = 0;
   slices.forEach((slice, idx) => {
     if (slice.value === 0) return;
     const proportion = slice.value / totalValue;
-    const angle = proportion * 360;
-    const midAngle = startAngle + angle / 2;
+    const sweepAngle = proportion * 360;
+    const endAngle = startAngle + sweepAngle;
 
-    // Draw line from center outward
-    const lineLen = radius;
-    const lineW = Math.max(3, Math.ceil(angle / 25));
+    const arc = figma.createEllipse();
+    arc.name = `Slice: ${slice.label}`;
+    arc.resize(diameter, diameter);
+    arc.fills = [solidFill(palette[idx % palette.length])];
+    arc.strokes = [solidFill(TOKENS.white)];
+    arc.strokeWeight = 2;
 
-    const line = figma.createRectangle();
-    line.name = `Line: ${slice.label}`;
-    line.resize(lineW, lineLen);
-    line.fills = [solidFill(palette[idx % palette.length])];
-    line.strokes = [solidFill(TOKENS.white)];
-    line.strokeWeight = 0.5;
+    // Set arc properties
+    arc.arcData = {
+      startingAngle: (startAngle * Math.PI) / 180,
+      endingAngle: (endAngle * Math.PI) / 180,
+      innerRadius: 0.45,
+    };
 
-    // Position with center at pie center, extend upward then rotate
-    line.x = centerX - lineW / 2;
-    line.y = centerY - lineLen;
-    line.rotation = midAngle;
-
-    pieContainer.appendChild(line);
-
-    startAngle += angle;
+    pieContainer.appendChild(arc);
+    startAngle = endAngle;
   });
-
-  // Inner circle (cover center)
-  const innerCircle = figma.createEllipse();
-  innerCircle.name = 'Inner Circle';
-  innerCircle.resize(radius * 0.35, radius * 0.35);
-  innerCircle.fills = [solidFill(TOKENS.white)];
-  innerCircle.strokes = [solidFill(TOKENS.black15)];
-  innerCircle.strokeWeight = 1;
-  innerCircle.x = centerX - (radius * 0.35) / 2;
-  innerCircle.y = centerY - (radius * 0.35) / 2;
-  pieContainer.appendChild(innerCircle);
 
   return root;
 }
