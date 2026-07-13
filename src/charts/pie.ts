@@ -80,19 +80,19 @@ function buildPieWithBottomLegend(
     const proportion = slice.value / totalValue;
     const angle = proportion * 360;
     const midAngle = startAngle + angle / 2;
-    const rad = midAngle * (Math.PI / 180);
 
     // Draw line from center outward
     const lineLen = radius;
-    const lineW = Math.max(2, Math.ceil(angle / 30));
+    const lineW = Math.max(3, Math.ceil(angle / 25));
 
     const line = figma.createRectangle();
     line.name = `Line: ${slice.label}`;
     line.resize(lineW, lineLen);
     line.fills = [solidFill(palette[idx % palette.length])];
-    line.strokes = [];
+    line.strokes = [solidFill(TOKENS.white)];
+    line.strokeWeight = 0.5;
 
-    // Position center at pie center
+    // Position with center at pie center, extend upward then rotate
     line.x = centerX - lineW / 2;
     line.y = centerY - lineLen;
     line.rotation = midAngle;
@@ -184,19 +184,19 @@ function buildPieWithLeftLegend(
     const proportion = slice.value / totalValue;
     const angle = proportion * 360;
     const midAngle = startAngle + angle / 2;
-    const rad = midAngle * (Math.PI / 180);
 
     // Draw line from center outward
     const lineLen = radius;
-    const lineW = Math.max(2, Math.ceil(angle / 30));
+    const lineW = Math.max(3, Math.ceil(angle / 25));
 
     const line = figma.createRectangle();
     line.name = `Line: ${slice.label}`;
     line.resize(lineW, lineLen);
     line.fills = [solidFill(palette[idx % palette.length])];
-    line.strokes = [];
+    line.strokes = [solidFill(TOKENS.white)];
+    line.strokeWeight = 0.5;
 
-    // Position center at pie center
+    // Position with center at pie center, extend upward then rotate
     line.x = centerX - lineW / 2;
     line.y = centerY - lineLen;
     line.rotation = midAngle;
