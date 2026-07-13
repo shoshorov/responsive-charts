@@ -1,19 +1,15 @@
 import { GenerateChartPayload, PieChartOptions } from '../types';
-import { TOKENS, CHART, TEXT, solidFill } from '../styles/tokens';
+import { TOKENS, CHART, CHART_PALETTE, TEXT, solidFill } from '../styles/tokens';
 
 export async function createPieChart(payload: GenerateChartPayload): Promise<FrameNode> {
   await figma.loadFontAsync({ family: TEXT.FONT_FAMILY, style: 'Regular' });
 
-  const { data, xField, yFields, colors, pieOptions } = payload;
+  const { data, xField, yFields, pieOptions } = payload;
   const opts: PieChartOptions = pieOptions || { legendPosition: 'bottom', showLabels: false };
-  const palette = colors.length > 0 ? colors : [
-    TOKENS.blueVibrant,
-    TOKENS.greenVibrant,
-    TOKENS.yellowVibrant,
-    TOKENS.orangeVibrant,
-    TOKENS.redVibrant,
-    TOKENS.purpleVibrant,
-  ];
+  // Pie slices come from data rows (one per category), not yFields — so the
+  // yField-scoped `colors` array doesn't apply. Always cycle the full palette
+  // so each slice gets a distinct colour.
+  const palette = CHART_PALETTE;
 
   // Build pie as stacked horizontal bar with legend
   return opts.legendPosition === 'left'
