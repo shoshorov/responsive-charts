@@ -88,6 +88,9 @@ function buildPieWithBottomLegend(
     colorIdx += 1;
   });
 
+  // Lock the pie to a 1:1 ratio so it resizes proportionally without Shift
+  pieContainer.lockAspectRatio();
+
   // Legend below
   const legend = buildPieLegend(slices, palette, innerW);
   root.appendChild(legend);
@@ -169,6 +172,9 @@ function buildPieWithLeftLegend(
     startAngle = endAngle;
     colorIdx += 1;
   });
+
+  // Lock the pie to a 1:1 ratio so it resizes proportionally without Shift
+  pieContainer.lockAspectRatio();
 
   return root;
 }
