@@ -15,23 +15,21 @@ export async function createPieChart(payload: GenerateChartPayload): Promise<Fra
     TOKENS.purpleVibrant,
   ];
 
+  // Build pie as stacked horizontal bar with legend
   return opts.legendPosition === 'left'
-    ? buildPieChartWithLeftLegend(data, xField, yFields, palette, opts)
-    : buildPieChartWithBottomLegend(data, xField, yFields, palette, opts);
+    ? buildPieWithLeftLegend(data, xField, yFields, palette)
+    : buildPieWithBottomLegend(data, xField, yFields, palette);
 }
 
-function buildPieChartWithBottomLegend(
+function buildPieWithBottomLegend(
   data: GenerateChartPayload['data'],
   xField: string,
   yFields: string[],
   palette: string[],
-  opts: PieChartOptions,
 ): FrameNode {
-  const pieRadius = 60;
-  const pieDiameter = pieRadius * 2;
   const innerW = CHART.WIDTH - CHART.MARGIN.left - CHART.MARGIN.right;
 
-  // Compute pie data: label + value per row
+  // Compute pie data
   const slices = data.map(row => ({
     label: String(row[xField] || ''),
     value: yFields.reduce((sum, f) => sum + (Number(row[f]) || 0), 0),
@@ -51,27 +49,33 @@ function buildPieChartWithBottomLegend(
   root.paddingRight = CHART.MARGIN.right;
   root.itemSpacing = 20;
   root.fills = [solidFill(TOKENS.white)];
-  root.resize(CHART.WIDTH, 400);
+  root.resize(CHART.WIDTH, 300);
 
-  // Pie container
-  const pieContainer = figma.createFrame();
-  pieContainer.name = 'Pie Container';
-  pieContainer.layoutMode = 'NONE';
-  pieContainer.clipsContent = false;
-  pieContainer.fills = [];
-  pieContainer.resize(pieDiameter, pieDiameter);
-  root.appendChild(pieContainer);
+  // Stacked bar visualization
+  const bar = figma.createFrame();
+  bar.name = 'Stacked Bar';
+  bar.layoutMode = 'HORIZONTAL';
+  bar.primaryAxisSizingMode = 'FIXED';
+  bar.counterAxisSizingMode = 'FIXED';
+  bar.itemSpacing = 0;
+  bar.fills = [];
+  bar.resize(innerW, 40);
+  root.appendChild(bar);
 
-  // Draw pie slices using concentric circles with segments
-  let startAngle = 0;
+  // Draw segments
   slices.forEach((slice, idx) => {
     if (slice.value === 0) return;
-    const percentage = slice.value / totalValue;
-    const angle = percentage * 360;
-    const color = palette[idx % palette.length];
+    const proportion = slice.value / totalValue;
+    const segmentW = innerW * proportion;
 
-    drawPieSegment(pieContainer, startAngle, angle, color, pieRadius);
-    startAngle += angle;
+    const segment = figma.createRectangle();
+    segment.name = `Segment: ${slice.label}`;
+    segment.resize(segmentW, 40);
+    segment.fills = [solidFill(palette[idx % palette.length])];
+    segment.strokes = [solidFill(TOKENS.white)];
+    segment.strokeWeight = 1;
+
+    bar.appendChild(segment);
   });
 
   // Legend below
@@ -82,16 +86,12 @@ function buildPieChartWithBottomLegend(
   return root;
 }
 
-function buildPieChartWithLeftLegend(
+function buildPieWithLeftLegend(
   data: GenerateChartPayload['data'],
   xField: string,
   yFields: string[],
   palette: string[],
-  opts: PieChartOptions,
 ): FrameNode {
-  const pieRadius = 60;
-  const pieDiameter = pieRadius * 2;
-
   // Compute pie data
   const slices = data.map(row => ({
     label: String(row[xField] || ''),
@@ -99,6 +99,7 @@ function buildPieChartWithLeftLegend(
   }));
 
   const totalValue = slices.reduce((sum, s) => sum + s.value, 0);
+  const innerW = CHART.WIDTH - CHART.MARGIN.left - CHART.MARGIN.right;
 
   // Root horizontal layout
   const root = figma.createFrame();
@@ -110,88 +111,43 @@ function buildPieChartWithLeftLegend(
   root.paddingBottom = CHART.MARGIN.bottom;
   root.paddingLeft = CHART.MARGIN.left;
   root.paddingRight = CHART.MARGIN.right;
-  root.itemSpacing = 32;
-  root.counterAxisAlignItems = 'CENTER';
+  root.itemSpacing = 24;
+  root.counterAxisAlignItems = 'MIN';
   root.fills = [solidFill(TOKENS.white)];
-  const totalW = 180 + 32 + pieDiameter + CHART.MARGIN.left + CHART.MARGIN.right;
-  root.resize(totalW, Math.max(pieDiameter + CHART.MARGIN.top + CHART.MARGIN.bottom, 280));
+  root.resize(CHART.WIDTH, 280);
 
   // Legend on left
-  const legend = buildPieLegendVertical(slices, palette, 160);
+  const legend = buildPieLegendVertical(slices, palette, 140);
   root.appendChild(legend);
 
-  // Pie container on right
-  const pieContainer = figma.createFrame();
-  pieContainer.name = 'Pie Container';
-  pieContainer.layoutMode = 'NONE';
-  pieContainer.clipsContent = false;
-  pieContainer.fills = [];
-  pieContainer.resize(pieDiameter, pieDiameter);
-  root.appendChild(pieContainer);
+  // Stacked vertical bar on right
+  const barContainer = figma.createFrame();
+  barContainer.name = 'Bar Container';
+  barContainer.layoutMode = 'VERTICAL';
+  barContainer.primaryAxisSizingMode = 'FIXED';
+  barContainer.counterAxisSizingMode = 'FIXED';
+  barContainer.itemSpacing = 0;
+  barContainer.fills = [];
+  barContainer.resize(innerW - 140 - 24, 200);
+  root.appendChild(barContainer);
 
-  // Draw pie slices
-  let startAngle = 0;
+  // Draw segments (stacked vertically for left layout)
   slices.forEach((slice, idx) => {
     if (slice.value === 0) return;
-    const percentage = slice.value / totalValue;
-    const angle = percentage * 360;
-    const color = palette[idx % palette.length];
+    const proportion = slice.value / totalValue;
+    const segmentH = 200 * proportion;
 
-    drawPieSegment(pieContainer, startAngle, angle, color, pieRadius);
+    const segment = figma.createRectangle();
+    segment.name = `Segment: ${slice.label}`;
+    segment.resize(innerW - 140 - 24, segmentH);
+    segment.fills = [solidFill(palette[idx % palette.length])];
+    segment.strokes = [solidFill(TOKENS.white)];
+    segment.strokeWeight = 1;
 
-    startAngle += angle;
+    barContainer.appendChild(segment);
   });
 
   return root;
-}
-
-function drawPieSegment(
-  container: FrameNode,
-  startAngle: number,
-  angle: number,
-  color: string,
-  radius: number,
-): void {
-  if (angle === 0) return;
-
-  const centerX = radius;
-  const centerY = radius;
-  const diameter = radius * 2;
-
-  // Draw pie segment as stacked trapezoid-like shapes (approximate wedge)
-  // Create visual wedge by stacking thin rotated rectangles
-  const numStacks = Math.max(4, Math.ceil(radius / 15));
-  const stackThickness = radius / numStacks;
-
-  for (let i = 0; i < numStacks; i++) {
-    // Rectangle width increases with distance from center (trapezoid effect)
-    const innerR = i * stackThickness;
-    const outerR = (i + 1) * stackThickness;
-    const avgR = (innerR + outerR) / 2;
-
-    // Width of arc segment at average radius
-    const arcWidth = (avgR * angle * Math.PI) / 180;
-    const rectH = stackThickness - 1;
-
-    const rect = figma.createRectangle();
-    rect.name = `Stack ${i}`;
-    rect.resize(Math.max(2, arcWidth), Math.max(1, rectH));
-    rect.fills = [solidFill(color)];
-    rect.strokes = [solidFill(TOKENS.white)];
-    rect.strokeWeight = 0.5;
-
-    // Position at the midpoint of the arc segment
-    const midAngle = startAngle + angle / 2;
-    const rad = midAngle * (Math.PI / 180);
-    const posX = centerX + avgR * Math.cos(rad);
-    const posY = centerY + avgR * Math.sin(rad);
-
-    rect.x = posX - Math.max(2, arcWidth) / 2;
-    rect.y = posY - Math.max(1, rectH) / 2;
-    rect.rotation = midAngle;
-
-    container.appendChild(rect);
-  }
 }
 
 function buildPieLegend(
