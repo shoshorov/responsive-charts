@@ -43,7 +43,7 @@ function buildPieWithBottomLegend(
   const root = figma.createFrame();
   root.name = 'Pie Chart';
   root.layoutMode = 'VERTICAL';
-  root.primaryAxisSizingMode = 'FIXED';
+  root.primaryAxisSizingMode = 'AUTO';
   root.counterAxisSizingMode = 'AUTO';
   root.paddingTop = CHART.MARGIN.top;
   root.paddingBottom = CHART.MARGIN.bottom;
@@ -51,7 +51,6 @@ function buildPieWithBottomLegend(
   root.paddingRight = CHART.MARGIN.right;
   root.itemSpacing = 20;
   root.fills = [solidFill(TOKENS.white)];
-  root.resize(CHART.WIDTH, 380);
 
   // Pie circle container
   const pieContainer = figma.createFrame();
@@ -59,6 +58,7 @@ function buildPieWithBottomLegend(
   pieContainer.layoutMode = 'NONE';
   pieContainer.fills = [];
   pieContainer.resize(diameter, diameter);
+  pieContainer.clipsContent = false;
   root.appendChild(pieContainer);
 
   const centerX = radius;
@@ -128,7 +128,7 @@ function buildPieWithLeftLegend(
   const root = figma.createFrame();
   root.name = 'Pie Chart';
   root.layoutMode = 'HORIZONTAL';
-  root.primaryAxisSizingMode = 'FIXED';
+  root.primaryAxisSizingMode = 'AUTO';
   root.counterAxisSizingMode = 'AUTO';
   root.paddingTop = CHART.MARGIN.top;
   root.paddingBottom = CHART.MARGIN.bottom;
@@ -137,7 +137,6 @@ function buildPieWithLeftLegend(
   root.itemSpacing = 32;
   root.counterAxisAlignItems = 'CENTER';
   root.fills = [solidFill(TOKENS.white)];
-  root.resize(CHART.WIDTH, Math.max(diameter + CHART.MARGIN.top + CHART.MARGIN.bottom, 320));
 
   // Legend on left
   const legend = buildPieLegendVertical(slices, palette, 160);
@@ -149,6 +148,7 @@ function buildPieWithLeftLegend(
   pieContainer.layoutMode = 'NONE';
   pieContainer.fills = [];
   pieContainer.resize(diameter, diameter);
+  pieContainer.clipsContent = false;
   root.appendChild(pieContainer);
 
   const centerX = radius;
@@ -200,7 +200,7 @@ function buildPieLegend(
   const legend = figma.createFrame();
   legend.name = 'Legend';
   legend.layoutMode = 'HORIZONTAL';
-  legend.primaryAxisSizingMode = 'FIXED';
+  legend.primaryAxisSizingMode = 'AUTO';
   legend.counterAxisSizingMode = 'AUTO';
   legend.primaryAxisAlignItems = 'CENTER';
   legend.counterAxisAlignItems = 'CENTER';
@@ -208,7 +208,6 @@ function buildPieLegend(
   legend.itemSpacing = 16;
   legend.counterAxisSpacing = 6;
   legend.fills = [];
-  legend.resize(width, 40);
 
   slices.forEach((slice, idx) => {
     const color = palette[idx % palette.length];
@@ -251,13 +250,12 @@ function buildPieLegendVertical(
   const legend = figma.createFrame();
   legend.name = 'Legend';
   legend.layoutMode = 'VERTICAL';
-  legend.primaryAxisSizingMode = 'FIXED';
+  legend.primaryAxisSizingMode = 'AUTO';
   legend.counterAxisSizingMode = 'AUTO';
   legend.primaryAxisAlignItems = 'MIN';
   legend.counterAxisAlignItems = 'MIN';
   legend.itemSpacing = 8;
   legend.fills = [];
-  legend.resize(width, 400);
 
   slices.forEach((slice, idx) => {
     const color = palette[idx % palette.length];
