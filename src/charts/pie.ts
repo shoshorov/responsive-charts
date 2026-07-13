@@ -50,6 +50,7 @@ function buildPieWithBottomLegend(
   root.paddingLeft = CHART.MARGIN.left;
   root.paddingRight = CHART.MARGIN.right;
   root.itemSpacing = 20;
+  root.primaryAxisAlignItems = 'CENTER';
   root.fills = [solidFill(TOKENS.white)];
 
   // Pie circle container
@@ -75,7 +76,8 @@ function buildPieWithBottomLegend(
 
   // Draw pie slices using arc ellipses
   let startAngle = 0;
-  slices.forEach((slice, idx) => {
+  let colorIdx = 0;
+  slices.forEach((slice) => {
     if (slice.value === 0) return;
     const proportion = slice.value / totalValue;
     const sweepAngle = proportion * 360;
@@ -84,7 +86,7 @@ function buildPieWithBottomLegend(
     const arc = figma.createEllipse();
     arc.name = `Slice: ${slice.label}`;
     arc.resize(diameter, diameter);
-    arc.fills = [solidFill(palette[idx % palette.length])];
+    arc.fills = [solidFill(palette[colorIdx % palette.length])];
     arc.strokes = [solidFill(TOKENS.white)];
     arc.strokeWeight = 2;
 
@@ -97,6 +99,7 @@ function buildPieWithBottomLegend(
 
     pieContainer.appendChild(arc);
     startAngle = endAngle;
+    colorIdx += 1;
   });
 
   // Legend below
@@ -165,7 +168,8 @@ function buildPieWithLeftLegend(
 
   // Draw pie slices using arc ellipses
   let startAngle = 0;
-  slices.forEach((slice, idx) => {
+  let colorIdx = 0;
+  slices.forEach((slice) => {
     if (slice.value === 0) return;
     const proportion = slice.value / totalValue;
     const sweepAngle = proportion * 360;
@@ -174,7 +178,7 @@ function buildPieWithLeftLegend(
     const arc = figma.createEllipse();
     arc.name = `Slice: ${slice.label}`;
     arc.resize(diameter, diameter);
-    arc.fills = [solidFill(palette[idx % palette.length])];
+    arc.fills = [solidFill(palette[colorIdx % palette.length])];
     arc.strokes = [solidFill(TOKENS.white)];
     arc.strokeWeight = 2;
 
@@ -187,6 +191,7 @@ function buildPieWithLeftLegend(
 
     pieContainer.appendChild(arc);
     startAngle = endAngle;
+    colorIdx += 1;
   });
 
   return root;
