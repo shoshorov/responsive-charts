@@ -58,18 +58,6 @@ function buildPieWithBottomLegend(
   pieContainer.clipsContent = false;
   root.appendChild(pieContainer);
 
-  const centerX = radius;
-  const centerY = radius;
-
-  // Outer circle
-  const outerCircle = figma.createEllipse();
-  outerCircle.name = 'Outer Circle';
-  outerCircle.resize(diameter, diameter);
-  outerCircle.fills = [];
-  outerCircle.strokes = [solidFill(TOKENS.black15)];
-  outerCircle.strokeWeight = 1;
-  pieContainer.appendChild(outerCircle);
-
   // Draw pie slices using arc ellipses
   let startAngle = 0;
   let colorIdx = 0;
@@ -94,6 +82,8 @@ function buildPieWithBottomLegend(
     };
 
     pieContainer.appendChild(arc);
+    // Scale with the container so the pie is resizable
+    arc.constraints = { horizontal: 'SCALE', vertical: 'SCALE' };
     startAngle = endAngle;
     colorIdx += 1;
   });
@@ -150,18 +140,6 @@ function buildPieWithLeftLegend(
   pieContainer.clipsContent = false;
   root.appendChild(pieContainer);
 
-  const centerX = radius;
-  const centerY = radius;
-
-  // Outer circle
-  const outerCircle = figma.createEllipse();
-  outerCircle.name = 'Outer Circle';
-  outerCircle.resize(diameter, diameter);
-  outerCircle.fills = [];
-  outerCircle.strokes = [solidFill(TOKENS.black15)];
-  outerCircle.strokeWeight = 1;
-  pieContainer.appendChild(outerCircle);
-
   // Draw pie slices using arc ellipses
   let startAngle = 0;
   let colorIdx = 0;
@@ -186,6 +164,8 @@ function buildPieWithLeftLegend(
     };
 
     pieContainer.appendChild(arc);
+    // Scale with the container so the pie is resizable
+    arc.constraints = { horizontal: 'SCALE', vertical: 'SCALE' };
     startAngle = endAngle;
     colorIdx += 1;
   });
