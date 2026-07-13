@@ -498,6 +498,22 @@
         <p class="chart-card-sub">Show trends over time</p>
       </div>
 
+      <!-- Pie chart card -->
+      <div class="chart-card" id="card-pie" data-type="pie">
+        <svg width="80" height="60" viewBox="0 0 80 60">
+          <circle cx="40" cy="30" r="20" fill="#00a3e0" opacity="0.9"/>
+          <circle cx="40" cy="30" r="14" fill="#fff"/>
+          <path d="M40 30 L40 16 A14 14 0 0 1 49.9 18.2 Z" fill="#43b02a"/>
+          <path d="M40 30 L49.9 18.2 A14 14 0 0 1 53.5 37.5 Z" fill="#f2a900"/>
+          <path d="M40 30 L53.5 37.5 A14 14 0 0 1 40 44 Z" fill="#ff6a13"/>
+          <path d="M40 30 L40 44 A14 14 0 0 1 30.1 41.8 Z" fill="#c81212"/>
+          <path d="M40 30 L30.1 41.8 A14 14 0 0 1 26.5 22.5 Z" fill="#a15a95"/>
+          <path d="M40 30 L26.5 22.5 A14 14 0 0 1 40 16 Z" fill="#00a3e0"/>
+        </svg>
+        <p class="chart-card-title">Pie Chart</p>
+        <p class="chart-card-sub">Show composition</p>
+      </div>
+
     </div>
 
   </div>
@@ -506,12 +522,12 @@
   <div class="step-content" id="step-3">
 
     <div class="field-group">
-      <label class="field-label" for="x-field">X Axis <span>(categories / labels)</span></label>
+      <label class="field-label" for="x-field" id="x-field-label">X Axis <span>(categories / labels)</span></label>
       <select id="x-field"></select>
     </div>
 
     <div class="field-group">
-      <label class="field-label">Y Axis <span>(select one or more numeric columns)</span></label>
+      <label class="field-label" id="y-field-label">Y Axis <span>(select one or more numeric columns)</span></label>
       <div class="series-list" id="series-list"></div>
       <p class="inline-err" id="series-err">Select at least one Y column.</p>
     </div>
@@ -625,6 +641,27 @@
           <span class="option-label">Horizontal grid</span>
         </div>
         <div class="toggle on" id="toggle-line-grid-h"></div>
+      </div>
+    </div>
+
+    <!-- Pie-specific options -->
+    <div id="pie-options" class="hidden">
+      <p class="section-title">Pie Chart Options</p>
+
+      <div class="option-row">
+        <span class="option-label">Legend position</span>
+        <div class="seg-group" id="pie-legend-position">
+          <button class="seg-btn active" data-val="bottom">Bottom</button>
+          <button class="seg-btn"        data-val="left">Left</button>
+        </div>
+      </div>
+
+      <div class="option-row">
+        <div>
+          <span class="option-label">Show labels</span>
+          <span class="option-sub">Display category labels on slices</span>
+        </div>
+        <div class="toggle" id="toggle-pie-labels"></div>
       </div>
     </div>
 

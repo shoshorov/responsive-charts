@@ -3,7 +3,7 @@ import { CHART_PALETTE } from './styles/tokens';
 import { detectScaleType } from './charts/xAxis';
 import {
   DataRow, ChartType, UIToPluginMessage, PluginToUIMessage,
-  BarChartOptions, LineChartOptions,
+  BarChartOptions, LineChartOptions, PieChartOptions,
 } from './types';
 
 // ── State ─────────────────────────────────────────────────────────────────────
@@ -22,6 +22,7 @@ interface AppState {
   completedSteps: Set<number>;
   barOptions: BarChartOptions;
   lineOptions: LineChartOptions;
+  pieOptions: PieChartOptions;
 }
 
 const state: AppState = {
@@ -40,6 +41,9 @@ const state: AppState = {
   lineOptions: {
     curve: 'linear', showArea: false, showMarkers: true, showGridH: true,
     yAxisLabel: '',
+  },
+  pieOptions: {
+    legendPosition: 'bottom', showLabels: false,
   },
 };
 
@@ -263,7 +267,7 @@ function renderPreviewTable(): void {
 // ── Step 2: Chart type ────────────────────────────────────────────────────────
 
 function initChartTypeCards(): void {
-  ['bar', 'line'].forEach(type => {
+  ['bar', 'line', 'pie'].forEach(type => {
     el(`card-${type}`).addEventListener('click', () => {
       state.chartType = type as ChartType;
       document.querySelectorAll('.chart-card').forEach(c => c.classList.remove('selected'));
@@ -277,9 +281,24 @@ function initChartTypeCards(): void {
 // ── Step 3: Field mapping ─────────────────────────────────────────────────────
 
 function renderMappingStep(): void {
-  // For line charts, auto-select the first detected time column as X axis
-  if (state.chartType === 'line' && state.timeHeaders.length > 0) {
+  // For pie charts, use first non-numeric column; for line, use time column
+  if (state.chartType === 'pie') {
+    const nonNumeric = state.headers.filter(h => !state.numericHeaders.includes(h));
+    state.xField = nonNumeric[0] ?? state.headers[0];
+    state.yFields = state.numericHeaders.slice(0, 1);
+  } else if (state.chartType === 'line' && state.timeHeaders.length > 0) {
     state.xField = state.timeHeaders[0];
+  }
+
+  // Update field labels based on chart type
+  const xLabel = el('x-field-label');
+  const yLabel = el('y-field-label');
+  if (state.chartType === 'pie') {
+    xLabel.innerHTML = 'Categories <span>(labels for pie slices)</span>';
+    yLabel.innerHTML = 'Values <span>(select one numeric column)</span>';
+  } else {
+    xLabel.innerHTML = 'X Axis <span>(categories / labels)</span>';
+    yLabel.innerHTML = 'Y Axis <span>(select one or more numeric columns)</span>';
   }
 
   // X axis dropdown
@@ -337,6 +356,10 @@ function renderCustomizeStep(): void {
   // Show/hide chart-specific options
   el('bar-options').classList.toggle('hidden',  state.chartType !== 'bar');
   el('line-options').classList.toggle('hidden', state.chartType !== 'line');
+  el('pie-options').classList.toggle('hidden',  state.chartType !== 'pie');
+
+  // Hide Y-axis label for pie charts
+  el('y-axis-label').parentElement!.parentElement!.style.display = state.chartType === 'pie' ? 'none' : 'block';
 
   // Per-series color pickers
   renderSeriesColors();
@@ -433,6 +456,7 @@ function initGenerateBtn(): void {
         colors,
         barOptions: { ...state.barOptions },
         lineOptions: { ...state.lineOptions },
+        pieOptions: { ...state.pieOptions },
       },
     };
     parent.postMessage({ pluginMessage: msg }, '*');
@@ -494,6 +518,10 @@ function init(): void {
   initToggle('toggle-line-area',    false, v => { state.lineOptions.showArea = v; });
   initToggle('toggle-line-markers', true,  v => { state.lineOptions.showMarkers = v; });
   initToggle('toggle-line-grid-h',  true,  v => { state.lineOptions.showGridH = v; });
+
+  // Pie options
+  initSegGroup('pie-legend-position', v => { state.pieOptions.legendPosition = v as 'bottom' | 'left'; });
+  initToggle('toggle-pie-labels', false, v => { state.pieOptions.showLabels = v; });
 
   initGenerateBtn();
   goToStep(1);

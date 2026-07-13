@@ -1,4 +1,4 @@
-export type ChartType = 'bar' | 'line';
+export type ChartType = 'bar' | 'line' | 'pie';
 
 export interface DataRow {
   [key: string]: string | number;
@@ -22,6 +22,11 @@ export interface LineChartOptions {
   yAxisLabel?: string;
 }
 
+export interface PieChartOptions {
+  legendPosition: 'bottom' | 'left';
+  showLabels: boolean;
+}
+
 export interface GenerateChartPayload {
   data: DataRow[];
   xField: string;
@@ -30,6 +35,7 @@ export interface GenerateChartPayload {
   colors: string[];
   barOptions: BarChartOptions;
   lineOptions: LineChartOptions;
+  pieOptions?: PieChartOptions;
 }
 
 export type UIToPluginMessage =

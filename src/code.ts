@@ -3,6 +3,7 @@
 import { UIToPluginMessage, PluginToUIMessage } from './types';
 import { createBarChart } from './charts/bar';
 import { createLineChart } from './charts/line';
+import { createPieChart } from './charts/pie';
 
 declare const __html__: string;
 
@@ -12,10 +13,14 @@ figma.ui.onmessage = async (msg: UIToPluginMessage) => {
   if (msg.type !== 'generate-chart') return;
 
   try {
-    const chart =
-      msg.payload.chartType === 'bar'
-        ? await createBarChart(msg.payload)
-        : await createLineChart(msg.payload);
+    let chart: FrameNode;
+    if (msg.payload.chartType === 'bar') {
+      chart = await createBarChart(msg.payload);
+    } else if (msg.payload.chartType === 'line') {
+      chart = await createLineChart(msg.payload);
+    } else {
+      chart = await createPieChart(msg.payload);
+    }
 
     figma.currentPage.appendChild(chart);
     figma.viewport.scrollAndZoomIntoView([chart]);

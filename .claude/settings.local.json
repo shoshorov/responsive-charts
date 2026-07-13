@@ -9,7 +9,8 @@
       "Bash(node)",
       "Bash(git init *)",
       "Bash(git remote *)",
-      "Bash(git config *)"
+      "Bash(git config *)",
+      "Bash(git commit *)"
     ]
   }
 }
