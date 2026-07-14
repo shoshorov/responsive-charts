@@ -75,7 +75,7 @@ export function buildLegend(
       // Solid colour square for bar charts
       const square = figma.createRectangle();
       square.name = 'Indicator';
-      square.resize(10, 10);
+      square.resize(13, 13);
       square.fills = [solidFill(color)];
       square.cornerRadius = 2;
       item.appendChild(square);

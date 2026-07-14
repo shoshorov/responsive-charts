@@ -208,12 +208,11 @@ function buildPieLegend(
     item.itemSpacing = 6;
     item.fills = [];
 
-    const square = figma.createRectangle();
-    square.name = 'Indicator';
-    square.resize(10, 10);
-    square.fills = [solidFill(color)];
-    square.cornerRadius = 2;
-    item.appendChild(square);
+    const circle = figma.createEllipse();
+    circle.name = 'Indicator';
+    circle.resize(15, 15);
+    circle.fills = [solidFill(color)];
+    item.appendChild(circle);
 
     const label = figma.createText();
     label.name = 'Label';
@@ -256,12 +255,11 @@ function buildPieLegendVertical(
     item.itemSpacing = 6;
     item.fills = [];
 
-    const square = figma.createRectangle();
-    square.name = 'Indicator';
-    square.resize(10, 10);
-    square.fills = [solidFill(color)];
-    square.cornerRadius = 2;
-    item.appendChild(square);
+    const circle = figma.createEllipse();
+    circle.name = 'Indicator';
+    circle.resize(15, 15);
+    circle.fills = [solidFill(color)];
+    item.appendChild(circle);
 
     const label = figma.createText();
     label.name = 'Label';
