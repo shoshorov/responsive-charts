@@ -12,9 +12,13 @@ export async function createPieChart(payload: GenerateChartPayload): Promise<Fra
   const palette = CHART_PALETTE;
 
   // Build pie as stacked horizontal bar with legend
-  return opts.legendPosition === 'left'
-    ? buildPieWithLeftLegend(data, xField, yFields, palette)
-    : buildPieWithBottomLegend(data, xField, yFields, palette);
+  if (opts.legendPosition === 'left') {
+    return buildPieWithLeftLegend(data, xField, yFields, palette);
+  } else if (opts.legendPosition === 'right') {
+    return buildPieWithRightLegend(data, xField, yFields, palette);
+  } else {
+    return buildPieWithBottomLegend(data, xField, yFields, palette);
+  }
 }
 
 function buildPieWithBottomLegend(
@@ -24,7 +28,7 @@ function buildPieWithBottomLegend(
   palette: string[],
 ): FrameNode {
   const innerW = CHART.WIDTH - CHART.MARGIN.left - CHART.MARGIN.right;
-  const radius = 70;
+  const radius = 120;
   const diameter = radius * 2;
 
   // Compute pie data
@@ -105,7 +109,7 @@ function buildPieWithLeftLegend(
   yFields: string[],
   palette: string[],
 ): FrameNode {
-  const radius = 70;
+  const radius = 120;
   const diameter = radius * 2;
 
   // Compute pie data
@@ -175,6 +179,86 @@ function buildPieWithLeftLegend(
 
   // Lock the pie to a 1:1 ratio so it resizes proportionally without Shift
   pieContainer.lockAspectRatio();
+
+  return root;
+}
+
+function buildPieWithRightLegend(
+  data: GenerateChartPayload['data'],
+  xField: string,
+  yFields: string[],
+  palette: string[],
+): FrameNode {
+  const radius = 120;
+  const diameter = radius * 2;
+
+  // Compute pie data
+  const slices = data.map(row => ({
+    label: String(row[xField] || ''),
+    value: yFields.reduce((sum, f) => sum + (Number(row[f]) || 0), 0),
+  }));
+
+  const totalValue = slices.reduce((sum, s) => sum + s.value, 0);
+
+  // Root horizontal layout
+  const root = figma.createFrame();
+  root.name = 'Pie Chart';
+  root.layoutMode = 'HORIZONTAL';
+  root.primaryAxisSizingMode = 'AUTO';
+  root.counterAxisSizingMode = 'AUTO';
+  root.paddingTop = CHART.MARGIN.top;
+  root.paddingBottom = CHART.MARGIN.bottom;
+  root.paddingLeft = CHART.MARGIN.left;
+  root.paddingRight = CHART.MARGIN.right;
+  root.itemSpacing = 32;
+  root.counterAxisAlignItems = 'CENTER';
+  root.fills = [solidFill(TOKENS.white)];
+
+  // Pie circle container on left
+  const pieContainer = figma.createFrame();
+  pieContainer.name = 'Pie Circle';
+  pieContainer.layoutMode = 'NONE';
+  pieContainer.fills = [];
+  pieContainer.resize(diameter, diameter);
+  pieContainer.clipsContent = false;
+  root.appendChild(pieContainer);
+
+  // Draw pie slices using arc ellipses
+  let startAngle = 0;
+  let colorIdx = 0;
+  slices.forEach((slice) => {
+    if (slice.value === 0) return;
+    const proportion = slice.value / totalValue;
+    const sweepAngle = proportion * 360;
+    const endAngle = startAngle + sweepAngle;
+
+    const arc = figma.createEllipse();
+    arc.name = `Slice: ${slice.label}`;
+    arc.resize(diameter, diameter);
+    arc.fills = [solidFill(palette[colorIdx % palette.length])];
+    arc.strokes = [solidFill(TOKENS.white)];
+    arc.strokeWeight = 2;
+
+    // Set arc properties
+    arc.arcData = {
+      startingAngle: (startAngle * Math.PI) / 180,
+      endingAngle: (endAngle * Math.PI) / 180,
+      innerRadius: 0.45,
+    };
+
+    pieContainer.appendChild(arc);
+    // Scale with the container so the pie is resizable
+    arc.constraints = { horizontal: 'SCALE', vertical: 'SCALE' };
+    startAngle = endAngle;
+    colorIdx += 1;
+  });
+
+  // Lock the pie to a 1:1 ratio so it resizes proportionally without Shift
+  pieContainer.lockAspectRatio();
+
+  // Legend on right
+  const legend = buildPieLegendVertical(slices, palette, 160);
+  root.appendChild(legend);
 
   return root;
 }

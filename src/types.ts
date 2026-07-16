@@ -23,7 +23,7 @@ export interface LineChartOptions {
 }
 
 export interface PieChartOptions {
-  legendPosition: 'bottom' | 'left';
+  legendPosition: 'bottom' | 'left' | 'right';
   showLabels: boolean;
 }
 
