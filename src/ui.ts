@@ -43,7 +43,7 @@ const state: AppState = {
     yAxisLabel: '',
   },
   pieOptions: {
-    legendPosition: 'bottom', showLabels: false,
+    legendPosition: 'right', showValues: false,
   },
 };
 
@@ -520,8 +520,8 @@ function init(): void {
   initToggle('toggle-line-grid-h',  true,  v => { state.lineOptions.showGridH = v; });
 
   // Pie options
-  initSegGroup('pie-legend-position', v => { state.pieOptions.legendPosition = v as 'bottom' | 'left'; });
-  initToggle('toggle-pie-labels', false, v => { state.pieOptions.showLabels = v; });
+  initSegGroup('pie-legend-position', v => { state.pieOptions.legendPosition = v as 'bottom' | 'left' | 'right'; });
+  initToggle('toggle-pie-values', false, v => { state.pieOptions.showValues = v; });
 
   initGenerateBtn();
   goToStep(1);

@@ -24,7 +24,7 @@ export interface LineChartOptions {
 
 export interface PieChartOptions {
   legendPosition: 'bottom' | 'left' | 'right';
-  showLabels: boolean;
+  showValues: boolean;
 }
 
 export interface GenerateChartPayload {

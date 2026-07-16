@@ -5,7 +5,7 @@ export async function createPieChart(payload: GenerateChartPayload): Promise<Fra
   await figma.loadFontAsync({ family: TEXT.FONT_FAMILY, style: 'Regular' });
 
   const { data, xField, yFields, pieOptions } = payload;
-  const opts: PieChartOptions = pieOptions || { legendPosition: 'bottom', showLabels: false };
+  const opts: PieChartOptions = pieOptions || { legendPosition: 'right', showValues: false };
   // Pie slices come from data rows (one per category), not yFields — so the
   // yField-scoped `colors` array doesn't apply. Always cycle the full palette
   // so each slice gets a distinct colour.
@@ -13,11 +13,11 @@ export async function createPieChart(payload: GenerateChartPayload): Promise<Fra
 
   // Build pie as stacked horizontal bar with legend
   if (opts.legendPosition === 'left') {
-    return buildPieWithLeftLegend(data, xField, yFields, palette);
+    return buildPieWithLeftLegend(data, xField, yFields, palette, opts);
   } else if (opts.legendPosition === 'right') {
-    return buildPieWithRightLegend(data, xField, yFields, palette);
+    return buildPieWithRightLegend(data, xField, yFields, palette, opts);
   } else {
-    return buildPieWithBottomLegend(data, xField, yFields, palette);
+    return buildPieWithBottomLegend(data, xField, yFields, palette, opts);
   }
 }
 
@@ -26,6 +26,7 @@ function buildPieWithBottomLegend(
   xField: string,
   yFields: string[],
   palette: string[],
+  opts: PieChartOptions,
 ): FrameNode {
   const innerW = CHART.WIDTH - CHART.MARGIN.left - CHART.MARGIN.right;
   const radius = 120;
@@ -88,6 +89,33 @@ function buildPieWithBottomLegend(
     pieContainer.appendChild(arc);
     // Scale with the container so the pie is resizable
     arc.constraints = { horizontal: 'SCALE', vertical: 'SCALE' };
+
+    // Add value label on slice if enabled
+    if (opts.showValues) {
+      const labelAngle = (startAngle + endAngle) / 2;
+      const labelRadians = (labelAngle * Math.PI) / 180;
+      // Center of the donut ring band: midpoint of innerRadius (0.45) and outer edge (1.0)
+      const labelRadius = radius * 0.725;
+      const labelX = radius + Math.cos(labelRadians) * labelRadius;
+      const labelY = radius + Math.sin(labelRadians) * labelRadius;
+
+      const label = figma.createText();
+      label.name = `Value: ${slice.value}`;
+      label.characters = String(slice.value);
+      label.fontName = { family: TEXT.FONT_FAMILY, style: 'Regular' };
+      label.fontSize = TEXT.TICK_SIZE;
+      label.fills = [solidFill(TOKENS.white)];
+      label.textAlignHorizontal = 'CENTER';
+      label.textAlignVertical = 'CENTER';
+
+      pieContainer.appendChild(label);
+      const labelWidth = label.width;
+      const labelHeight = label.height;
+      label.x = labelX - labelWidth / 2;
+      label.y = labelY - labelHeight / 2;
+      label.constraints = { horizontal: 'SCALE', vertical: 'SCALE' };
+    }
+
     startAngle = endAngle;
     colorIdx += 1;
   });
@@ -108,6 +136,7 @@ function buildPieWithLeftLegend(
   xField: string,
   yFields: string[],
   palette: string[],
+  opts: PieChartOptions,
 ): FrameNode {
   const radius = 120;
   const diameter = radius * 2;
@@ -173,6 +202,33 @@ function buildPieWithLeftLegend(
     pieContainer.appendChild(arc);
     // Scale with the container so the pie is resizable
     arc.constraints = { horizontal: 'SCALE', vertical: 'SCALE' };
+
+    // Add value label on slice if enabled
+    if (opts.showValues) {
+      const labelAngle = (startAngle + endAngle) / 2;
+      const labelRadians = (labelAngle * Math.PI) / 180;
+      // Center of the donut ring band: midpoint of innerRadius (0.45) and outer edge (1.0)
+      const labelRadius = radius * 0.725;
+      const labelX = radius + Math.cos(labelRadians) * labelRadius;
+      const labelY = radius + Math.sin(labelRadians) * labelRadius;
+
+      const label = figma.createText();
+      label.name = `Value: ${slice.value}`;
+      label.characters = String(slice.value);
+      label.fontName = { family: TEXT.FONT_FAMILY, style: 'Regular' };
+      label.fontSize = TEXT.TICK_SIZE;
+      label.fills = [solidFill(TOKENS.white)];
+      label.textAlignHorizontal = 'CENTER';
+      label.textAlignVertical = 'CENTER';
+
+      pieContainer.appendChild(label);
+      const labelWidth = label.width;
+      const labelHeight = label.height;
+      label.x = labelX - labelWidth / 2;
+      label.y = labelY - labelHeight / 2;
+      label.constraints = { horizontal: 'SCALE', vertical: 'SCALE' };
+    }
+
     startAngle = endAngle;
     colorIdx += 1;
   });
@@ -188,6 +244,7 @@ function buildPieWithRightLegend(
   xField: string,
   yFields: string[],
   palette: string[],
+  opts: PieChartOptions,
 ): FrameNode {
   const radius = 120;
   const diameter = radius * 2;
@@ -249,6 +306,33 @@ function buildPieWithRightLegend(
     pieContainer.appendChild(arc);
     // Scale with the container so the pie is resizable
     arc.constraints = { horizontal: 'SCALE', vertical: 'SCALE' };
+
+    // Add value label on slice if enabled
+    if (opts.showValues) {
+      const labelAngle = (startAngle + endAngle) / 2;
+      const labelRadians = (labelAngle * Math.PI) / 180;
+      // Center of the donut ring band: midpoint of innerRadius (0.45) and outer edge (1.0)
+      const labelRadius = radius * 0.725;
+      const labelX = radius + Math.cos(labelRadians) * labelRadius;
+      const labelY = radius + Math.sin(labelRadians) * labelRadius;
+
+      const label = figma.createText();
+      label.name = `Value: ${slice.value}`;
+      label.characters = String(slice.value);
+      label.fontName = { family: TEXT.FONT_FAMILY, style: 'Regular' };
+      label.fontSize = TEXT.TICK_SIZE;
+      label.fills = [solidFill(TOKENS.white)];
+      label.textAlignHorizontal = 'CENTER';
+      label.textAlignVertical = 'CENTER';
+
+      pieContainer.appendChild(label);
+      const labelWidth = label.width;
+      const labelHeight = label.height;
+      label.x = labelX - labelWidth / 2;
+      label.y = labelY - labelHeight / 2;
+      label.constraints = { horizontal: 'SCALE', vertical: 'SCALE' };
+    }
+
     startAngle = endAngle;
     colorIdx += 1;
   });
