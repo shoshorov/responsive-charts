@@ -77,7 +77,7 @@ function buildPieWithBottomLegend(
     arc.resize(diameter, diameter);
     arc.fills = [solidFill(palette[colorIdx % palette.length])];
     arc.strokes = [solidFill(TOKENS.white)];
-    arc.strokeWeight = 2;
+    arc.strokeWeight = 1;
 
     // Set arc properties
     arc.arcData = {
@@ -190,7 +190,7 @@ function buildPieWithLeftLegend(
     arc.resize(diameter, diameter);
     arc.fills = [solidFill(palette[colorIdx % palette.length])];
     arc.strokes = [solidFill(TOKENS.white)];
-    arc.strokeWeight = 2;
+    arc.strokeWeight = 1;
 
     // Set arc properties
     arc.arcData = {
@@ -294,7 +294,7 @@ function buildPieWithRightLegend(
     arc.resize(diameter, diameter);
     arc.fills = [solidFill(palette[colorIdx % palette.length])];
     arc.strokes = [solidFill(TOKENS.white)];
-    arc.strokeWeight = 2;
+    arc.strokeWeight = 1;
 
     // Set arc properties
     arc.arcData = {
