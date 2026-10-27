@@ -187,12 +187,13 @@ function processCSV(raw: string, filename: string): void {
     return typed;
   });
   state.headers = headers;
-  state.numericHeaders = headers.filter(h =>
-    state.rows.slice(0, 20).every(r => {
-      const v = r[h];
-      return v !== '' && !isNaN(Number(v));
-    })
-  );
+  state.numericHeaders = headers.filter(h => {
+    const sample = state.rows.slice(0, 20).map(r => r[h]);
+    const nonEmpty = sample.filter(v => v !== '' && v != null);
+    // Numeric if there's at least one value and every non-empty value parses as a
+    // number. Blank cells (e.g. gaps in a few rows) must not demote the column.
+    return nonEmpty.length > 0 && nonEmpty.every(v => !isNaN(Number(v)));
+  });
 
   // Detect columns whose values look like dates/time periods
   state.timeHeaders = headers.filter(h => {
@@ -203,7 +204,7 @@ function processCSV(raw: string, filename: string): void {
   // Pre-select fields (time column preferred as X; overridden per chart type in step 3)
   const nonNumeric = headers.filter(h => !state.numericHeaders.includes(h));
   state.xField  = state.timeHeaders[0] ?? nonNumeric[0] ?? headers[0];
-  state.yFields = state.numericHeaders.slice(0, 1);
+  state.yFields = state.numericHeaders.filter(h => h !== state.xField).slice(0, 1);
 
   // Assign default color (blue) to every numeric series
   state.seriesColors = {};
@@ -285,9 +286,10 @@ function renderMappingStep(): void {
   if (state.chartType === 'pie') {
     const nonNumeric = state.headers.filter(h => !state.numericHeaders.includes(h));
     state.xField = nonNumeric[0] ?? state.headers[0];
-    state.yFields = state.numericHeaders.slice(0, 1);
+    state.yFields = state.numericHeaders.filter(h => h !== state.xField).slice(0, 1);
   } else if (state.chartType === 'line' && state.timeHeaders.length > 0) {
     state.xField = state.timeHeaders[0];
+    state.yFields = state.yFields.filter(f => f !== state.xField);
   }
 
   // Update field labels based on chart type
@@ -306,12 +308,26 @@ function renderMappingStep(): void {
   xSel.innerHTML = '';
   state.headers.forEach(h => xSel.appendChild(new Option(h, h)));
   xSel.value = state.xField;
-  xSel.addEventListener('change', () => { state.xField = xSel.value; updateNextBtn(); });
+  xSel.addEventListener('change', () => {
+    state.xField = xSel.value;
+    // The column used as X can't also be a Y series — drop it and re-render the
+    // list so it reflects the new set of available numeric columns.
+    state.yFields = state.yFields.filter(f => f !== state.xField);
+    renderSeriesList();
+    updateNextBtn();
+  });
 
-  // Y series checkboxes (all numeric columns)
+  renderSeriesList();
+}
+
+/** Render the Y-series checkbox list: every numeric column except the X field. */
+function renderSeriesList(): void {
   const list = el('series-list');
   list.innerHTML = '';
-  state.numericHeaders.forEach(h => {
+
+  const candidates = state.numericHeaders.filter(h => h !== state.xField);
+
+  candidates.forEach(h => {
     const color = state.seriesColors[h] ?? CHART_PALETTE[0];
     const isChecked = state.yFields.includes(h);
 
@@ -341,7 +357,7 @@ function renderMappingStep(): void {
     list.appendChild(item);
   });
 
-  if (state.numericHeaders.length === 0) {
+  if (candidates.length === 0) {
     list.innerHTML = '<p style="font-size:11px;color:var(--t3)">No numeric columns detected.</p>';
   }
 }
