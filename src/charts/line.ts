@@ -23,8 +23,11 @@ export async function createLineChart(payload: GenerateChartPayload): Promise<Fr
 
   // Shared Y scale across all series
   const allY = yFields.flatMap(f => data.map(r => Number(r[f]) || 0));
-  const yMin = Math.min(...allY);
-  const yMax = Math.max(...allY, yMin + 1);
+  const dataMin = Math.min(...allY);
+  const yMax = Math.max(...allY, dataMin + 1);
+  // Drop the axis floor below the lowest value so points never sit on the
+  // x-axis baseline. Pad by 10% of the data span (min 1 unit).
+  const yMin = dataMin - Math.max((yMax - dataMin) * 0.1, 1);
 
   // X normalisation
   const xVals    = data.map(r => Number(r[xField]));
